@@ -5,7 +5,7 @@ import chromadb
 # Connect to ChromaDB server (change host/port/ssl as needed)
 client = chromadb.HttpClient(
     host="localhost",
-    port=8000,
+    port=8001,
     ssl=False
 )
 
