@@ -1,5 +1,7 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, PlainTextResponse
+import shutil
+from pathlib import Path
 # import chromadb
 
 # # Connect to ChromaDB server (change host/port/ssl as needed)
@@ -14,6 +16,18 @@ app = FastAPI()
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+@app.post("/upload-pdf")
+async def upload_pdf(file: UploadFile = File(...)):
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    file_path = UPLOAD_DIR / file.filename
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"filename": file.filename, "content_type": file.content_type, "location": str(file_path)}
 
 # @app.get("/add")
 # async def add_docs():
