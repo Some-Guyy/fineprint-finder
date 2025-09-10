@@ -1,12 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
-import { Dashboard } from './pages/Dashboard';
-import { ScrapingManagement } from './pages/ScrapingManagement';
-import { UploadPage } from './pages/UploadPage';
-import { ChangeDetectionResults } from './pages/ChangeDetectionResults';
-import { LLMAnalysisPage } from './pages/LLMAnalysisPage';
-import { AlertsNotificationSettings } from './pages/AlertsNotificationSettings';
+import { Dashboard } from './pages/archive/Dashboard';
+import { ScrapingManagement } from './pages/archive/ScrapingManagement';
+import { UploadPage } from './pages/archive/UploadPage';
+import { ChangeDetectionResults } from './pages/archive/ChangeDetectionResults';
+import { LLMAnalysisPage } from './pages/archive/LLMAnalysisPage';
+import { AlertsNotificationSettings } from './pages/archive/AlertsNotificationSettings';
+import RegulationManagementPlatform from './pages/Collaboration';
 
 function App() {
   return (
@@ -15,7 +16,8 @@ function App() {
         <Navigation />
         <main>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<RegulationManagementPlatform />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/scraping" element={<ScrapingManagement />} />
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/changes" element={<ChangeDetectionResults />} />
