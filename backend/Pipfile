@@ -7,6 +7,7 @@ name = "pypi"
 fastapi = "*"
 chromadb = "*"
 python-multipart = "*"
+uvicorn = "*"
 
 [dev-packages]
 
