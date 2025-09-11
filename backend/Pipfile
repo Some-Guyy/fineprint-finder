@@ -9,6 +9,7 @@ chromadb = "*"
 python-multipart = "*"
 uvicorn = "*"
 pymongo = "*" 
+python-dotenv = "*"
 
 [dev-packages]
 
