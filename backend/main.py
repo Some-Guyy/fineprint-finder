@@ -49,6 +49,20 @@ def store_regulation(entry: dict = Body(...)):
     
     return {"id": str(result.inserted_id), "message": "Regulation created"}
 
+@app.post("/regulations/{reg_id}/versions")
+def add_version(reg_id: str, new_version: dict = Body(...)):
+    new_version.setdefault("id", f"v{datetime.now().timestamp()}")
+    new_version.setdefault("uploadDate", datetime.now().strftime("%Y-%m-%d"))
+
+    db.regulations.update_one(
+        {"_id": ObjectId(reg_id)},
+        {
+            "$push": {"versions": new_version},
+            "$set": {"lastUpdated": new_version["uploadDate"]}
+        }
+    )
+    return {"message": "New version added", "version": new_version}
+
 @app.api_route("/{path_name:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: Request, path_name: str):
     print("Unhandled route:", request.url.path)
