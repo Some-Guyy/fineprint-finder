@@ -42,6 +42,12 @@ async def upload_pdf(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     return {"filename": file.filename, "content_type": file.content_type, "location": str(file_path)}
 
+@app.post("/store-regulation")
+def store_regulation(entry: dict = Body(...)):
+    
+    result =  db.regulations.insert_one(entry)
+    
+    return {"id": str(result.inserted_id), "message": "Regulation created"}
 
 @app.api_route("/{path_name:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: Request, path_name: str):
