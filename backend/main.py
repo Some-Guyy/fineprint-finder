@@ -1,17 +1,30 @@
-from fastapi import FastAPI, Request, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse, PlainTextResponse
+import os
 import shutil
+from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Body
+from fastapi.responses import JSONResponse, PlainTextResponse
+from pymongo import MongoClient
+from bson import ObjectId
+from dotenv import load_dotenv
+from datetime import datetime
 from pathlib import Path
-# import chromadb
 
-# # Connect to ChromaDB server (change host/port/ssl as needed)
-# client = chromadb.HttpClient(
-#     host="localhost",
-#     port=8001,
-#     ssl=False
-# )
+load_dotenv()
+db_user = os.getenv("DB_USER")
+db_pass = os.getenv("DB_PASS")
 
 app = FastAPI()
+URI = f"mongodb+srv://{db_user}:{db_pass}@fypwhere.u27axc2.mongodb.net/?retryWrites=true&w=majority&appName=fypwhere"
+client = MongoClient(URI)
+db = client["fypwhere"]
+collection = db["regulations"]
+
+@app.on_event("startup")
+def startup_db_client():
+    try:
+        client.admin.command("ping")
+        print("MongoDB connection successful")
+    except Exception as e:
+        print("MongoDB connection failed:", e)
 
 @app.get("/health")
 async def health_check():
@@ -29,35 +42,6 @@ async def upload_pdf(file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     return {"filename": file.filename, "content_type": file.content_type, "location": str(file_path)}
 
-# @app.get("/add")
-# async def add_docs():
-#     collection = client.get_or_create_collection(name="my_collection")
-#     collection.add(
-#         ids=["id1", "id2"],
-#         documents=[
-#             "This is a document about pineapple",
-#             "This is a document about oranges"
-#         ]
-#     )
-#     return PlainTextResponse("added docs", status_code=200)
-
-# @app.get("/query")
-# async def query_docs():
-#     collection = client.get_or_create_collection(name="my_collection")
-#     results = collection.query(
-#         query_texts=["This is a query document about hawaii"],
-#         n_results=2
-#     )
-#     print(results)
-#     return JSONResponse(content=results, status_code=200)
-
-# @app.get("/clear")
-# async def clear_collections():
-#     collections = client.list_collections()
-#     for col in collections:
-#         client.delete_collection(name=col.name)
-#         print(f"Deleted collection: {col.name}")
-#     return PlainTextResponse("Cleared collections!", status_code=200)
 
 @app.api_route("/{path_name:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def catch_all(request: Request, path_name: str):
