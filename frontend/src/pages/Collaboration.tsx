@@ -434,7 +434,8 @@ const RegulationManagementPlatform: React.FC = () => {
     }
     isOldestVersion = !previousVersionData;
   }
-
+  // console.log(selectedReg)
+  // console.log(currentVersionData)
   // Change from pending to verified or vice versa
   const handleStatusChange = (regId: string) => {
     setRegulations(prev => prev.map(reg => 
@@ -453,31 +454,6 @@ const RegulationManagementPlatform: React.FC = () => {
       setSelectedRegulation(null);
     }
   };
-
-  const testCORS = async () => {
-  try {
-    console.log("Testing CORS with GET request...");
-    
-    const response = await fetch("http://localhost:9000/hello", {
-      method: "GET"
-    });
-    
-    console.log("Response status:", response.status);
-    console.log("Response ok:", response.ok);
-    
-    if (!response.ok) {
-      console.error("Response not ok:", response.status);
-      return;
-    }
-    
-    const data = await response.json();
-    console.log("Response data:", data);
-    alert("CORS is working! Got: " + data.message);
-    
-  } catch (error) {
-    console.error("CORS test failed:", error);
-  }
-};
 
 
   // add brand new regulation
@@ -530,7 +506,71 @@ const RegulationManagementPlatform: React.FC = () => {
   }
 };
 
+// updating regulation with new version of it
+  const handleUpdateRegulation = async (file: File | null | undefined) => {
+  if (!file) return;
 
+  try {
+    // const formData = new FormData();
+    // formData.append("file", file);
+
+    // const res = await fetch("http://127.0.0.1:9000/upload-pdf", {
+    //   method: "POST",
+    //   body: formData,
+    // });
+
+    // if (!res.ok) throw new Error("Failed to upload PDF");
+
+    // const data = await res.json();
+
+    // dummy data below for now
+    const newVersion = {
+      
+        id: 'v2',
+        version: '2.0',
+        uploadDate: '2024-09-01',
+        fileName: 'eu_cookie_consent_v2.pdf',
+        detailedChanges: [
+          {
+            id: "change-1",
+            summary: "The updated regulation intensifies enforcement on prior consent and explicitly prohibits pre-ticked boxes and dark patterns in cookie consent mechanisms.",
+            analysis: "This change reflects a stricter regulatory stance emphasizing that consent must be freely given, specific, informed, and unambiguous. It affects all website operators targeting EU users, requiring them to redesign cookie banners to avoid manipulative designs and ensure no cookies are set before consent. This raises compliance costs but enhances user privacy protection.",
+            change: "Explicit prohibition of pre-ticked boxes and dark patterns; requirement that no non-essential cookies be set before active user consent.",
+            before_quote: '"Consent must be obtained before any cookies are set, and pre-ticked boxes or implied consent are not valid." (Page 5, Section 3.2)',
+            after_quote: '"Consent must be freely given, specific, informed, and unambiguous. Pre-ticked boxes or any form of default consent are prohibited. No cookies may be set prior to obtaining explicit consent." (Page 6, Section 3.2)',
+            type: "modification",
+            confidence: 1.00
+          },
+          {
+            id: "change-2",
+            summary: "The new regulation mandates granular consent options for different cookie categories rather than a single blanket acceptance.",
+            analysis: "This change requires websites to provide users with clear choices to accept or reject specific categories such as analytics, advertising, and functionality cookies. It increases transparency and user control but may complicate consent management for businesses. This aligns with GDPR principles and addresses user demand for more nuanced privacy controls.",
+            change: "Introduction of mandatory granular consent controls for cookie categories.",
+            before_quote: '"Consent may be obtained via a single acceptance mechanism covering all cookies used." (Page 7, Section 4.1)',
+            after_quote: '"Users must be provided with granular controls to consent to individual categories of cookies, including analytics, advertising, and functional cookies." (Page 8, Section 4.1)',
+            type: "modification",
+            confidence: 1.00
+          }
+        ]
+    }
+    // Update the selected regulation's versions
+    const updatedRegulations = regulations.map((reg) =>
+      reg.id === selectedReg?.id
+        ? { ...reg, versions: [newVersion, ...reg.versions]}
+        : reg
+    );
+
+    setRegulations(updatedRegulations);
+
+    setNewFile(null);
+    alert("Email notification sent to team regarding new regulation version upload.");
+  } catch (err) {
+    console.error(err);
+    alert("Error uploading regulation. Please try again.");
+  }
+};
+
+  // edit function for changes
   const handleEditChange = (changeId: string) => {
     if (editingChangeId === changeId) {
       // Save the edited change
@@ -691,9 +731,11 @@ const RegulationManagementPlatform: React.FC = () => {
                       accept=".pdf"
                       className="w-full text-sm"
                       onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          alert('New version uploaded. Analysis in progress...');
-                        }
+                        const file = e.target.files?.[0] || null;
+                        setNewFile(file);
+
+                        // Call upload function immediately, passing file and title
+                        handleUpdateRegulation(file);
                       }}
                     />
                   </div>
