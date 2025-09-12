@@ -17,13 +17,13 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_origins=["*"]
 )
 
 load_dotenv()
 db_user = os.getenv("DB_USER")
 db_pass = os.getenv("DB_PASS")
 
-app = FastAPI()
 URI = f"mongodb+srv://{db_user}:{db_pass}@fypwhere.u27axc2.mongodb.net/?retryWrites=true&w=majority&appName=fypwhere"
 client = MongoClient(URI)
 db = client["fypwhere"]
@@ -43,11 +43,6 @@ async def health_check():
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
-
-# Use below to test CORS
-@app.get("/hello")
-async def hello():
-    return {"message": "Hello from backend!", "cors": "working"}
 
 @app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):

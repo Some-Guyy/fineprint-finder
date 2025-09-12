@@ -584,7 +584,6 @@ const RegulationManagementPlatform: React.FC = () => {
               <Plus size={20} />
               Add New Regulation
             </button>
-<button onClick={testCORS}>Test CORS</button>
           </div>
         </div>
       </div>
