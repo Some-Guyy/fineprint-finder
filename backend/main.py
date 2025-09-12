@@ -1,12 +1,23 @@
 import os
 import shutil
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Body
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pymongo import MongoClient
 from bson import ObjectId
 from dotenv import load_dotenv
 from datetime import datetime
 from pathlib import Path
+
+app = FastAPI()
+
+# Add CORS BEFORE defining endpoints
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 load_dotenv()
 db_user = os.getenv("DB_USER")

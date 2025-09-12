@@ -212,7 +212,7 @@ const mockRegulations: Regulation[] = [
     ]
   },
   {
-    id: '2',
+    id: '3',
     title: 'Basel III Capital Requirements',
     lastUpdated: '2024-08-20',
     status: 'validated',
@@ -265,7 +265,7 @@ const mockRegulations: Regulation[] = [
     ]
   },
   {
-    id: '3',
+    id: '4',
     title: 'GDPR Privacy Amendment 2024',
     lastUpdated: '2024-07-10',
     status: 'validated',
@@ -414,6 +414,7 @@ const RegulationManagementPlatform: React.FC = () => {
     isOldestVersion = !previousVersionData;
   }
 
+  // Change from pending to verified or vice versa
   const handleStatusChange = (regId: string) => {
     setRegulations(prev => prev.map(reg => 
       reg.id === regId 
@@ -424,6 +425,7 @@ const RegulationManagementPlatform: React.FC = () => {
     alert('Email notification sent to team regarding status change.');
   };
 
+  // delete regulation
   const handleDelete = (regId: string) => {
     if (window.confirm('Are you sure you want to delete this regulation?')) {
       setRegulations(prev => prev.filter(reg => reg.id !== regId));
@@ -431,32 +433,61 @@ const RegulationManagementPlatform: React.FC = () => {
     }
   };
 
-  const handleAddRegulation = () => {
-    if (!newTitle || !newFile) return;
-    
+  // add brand new regulation
+  const handleAddRegulation = async () => {
+  if (!newTitle || !newFile) return;
+
+  try {
+    // Prepare form data to send to backend
+    const formData = new FormData();
+    formData.append("file", newFile);
+
+    // POST to backend
+    const res = await fetch("http://12.0.0.1:9000/upload-pdf", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to upload PDF");
+    }
+
+    const data = await res.json(); 
+    // data contains { filename, content_type, location }
+
+    const today = new Date().toISOString().split("T")[0];
+
     const newReg: Regulation = {
       id: Date.now().toString(),
       title: newTitle,
-      lastUpdated: new Date().toISOString().split('T')[0],
-      status: 'pending',
-      versions: [{
-        id: 'v1',
-        version: '1.0',
-        uploadDate: new Date().toISOString().split('T')[0],
-        fileName: newFile.name,
-        summary: '',
-        analysis: 'LLM analysis in progress...',
-        changes: []
-      }],
-      comments: []
+      lastUpdated: today,
+      status: "pending",
+      versions: [
+        {
+          id: "v1",
+          version: "1.0",
+          uploadDate: today,
+          fileName: data.filename, // from backend
+          summary: "",
+          analysis: "LLM analysis in progress...",
+          changes: [],
+          detailedChanges: [], // keep structure consistent
+        },
+      ],
+      comments: [],
     };
 
-    setRegulations(prev => [...prev, newReg]);
+    setRegulations((prev) => [...prev, newReg]);
     setShowAddModal(false);
-    setNewTitle('');
+    setNewTitle("");
     setNewFile(null);
-    alert('Email notification sent to team regarding new regulation upload.');
-  };
+    alert("Email notification sent to team regarding new regulation upload.");
+  } catch (err) {
+    console.error(err);
+    alert("Error uploading regulation. Please try again.");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50">
