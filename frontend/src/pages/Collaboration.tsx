@@ -454,6 +454,32 @@ const RegulationManagementPlatform: React.FC = () => {
     }
   };
 
+  const testCORS = async () => {
+  try {
+    console.log("Testing CORS with GET request...");
+    
+    const response = await fetch("http://localhost:9000/hello", {
+      method: "GET"
+    });
+    
+    console.log("Response status:", response.status);
+    console.log("Response ok:", response.ok);
+    
+    if (!response.ok) {
+      console.error("Response not ok:", response.status);
+      return;
+    }
+    
+    const data = await response.json();
+    console.log("Response data:", data);
+    alert("CORS is working! Got: " + data.message);
+    
+  } catch (error) {
+    console.error("CORS test failed:", error);
+  }
+};
+
+
   // add brand new regulation
   const handleAddRegulation = async () => {
   if (!newTitle || !newFile) return;
@@ -464,7 +490,7 @@ const RegulationManagementPlatform: React.FC = () => {
     formData.append("file", newFile);
 
     // POST to backend
-    const res = await fetch("http://12.0.0.1:9000/upload-pdf", {
+    const res = await fetch("http://127.0.0.1:9000/upload-pdf", {
       method: "POST",
       body: formData,
     });
@@ -558,6 +584,7 @@ const RegulationManagementPlatform: React.FC = () => {
               <Plus size={20} />
               Add New Regulation
             </button>
+<button onClick={testCORS}>Test CORS</button>
           </div>
         </div>
       </div>

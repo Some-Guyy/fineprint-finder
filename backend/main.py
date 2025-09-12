@@ -44,6 +44,11 @@ async def health_check():
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+# Use below to test CORS
+@app.get("/hello")
+async def hello():
+    return {"message": "Hello from backend!", "cors": "working"}
+
 @app.post("/upload-pdf")
 async def upload_pdf(file: UploadFile = File(...)):
     if file.content_type != "application/pdf":
