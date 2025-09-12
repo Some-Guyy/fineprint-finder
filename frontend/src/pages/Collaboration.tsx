@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, Eye, Download } from 'lucide-react';
+import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, Eye, Download, ChevronDown, ChevronRight, Info } from 'lucide-react';
 
 interface Regulation {
   id: string;
@@ -10,6 +10,16 @@ interface Regulation {
   comments: Comment[];
 }
 
+interface DetailedChange {
+  summary: string;
+  analysis: string;
+  change: string;
+  before_quote?: string;
+  after_quote?: string;
+  type: 'modification' | 'procedural change' | 'penalty change' | 'addition' | 'removal';
+  confidence: number;
+}
+
 interface RegulationVersion {
   id: string;
   version: string;
@@ -18,6 +28,7 @@ interface RegulationVersion {
   summary: string;
   analysis: string;
   changes: string[];
+  detailedChanges?: DetailedChange[];
 }
 
 interface Comment {
@@ -30,9 +41,108 @@ interface Comment {
 const mockRegulations: Regulation[] = [
   {
     id: '1',
-    title: 'MiFID II Investment Services',
+    title: 'EU Cookie Consent Regulation 2024',
     lastUpdated: '2024-09-01',
     status: 'pending',
+    versions: [
+      {
+        id: 'v2',
+        version: '2.0',
+        uploadDate: '2024-09-01',
+        fileName: 'eu_cookie_consent_v2.pdf',
+        summary: 'Stricter enforcement on consent mechanisms with prohibition of dark patterns and enhanced granular controls',
+        analysis: 'Version 2.0 introduces significant changes that will impact all Nomura digital properties targeting EU users. The regulation now explicitly prohibits pre-ticked boxes and dark patterns, requires granular consent options, mandates detailed record-keeping, removes legitimate interest basis for analytics cookies, and significantly increases penalties. Immediate compliance action required for Q1 2025 deadline.',
+        changes: [
+          'Explicit prohibition of pre-ticked boxes and dark patterns',
+          'Introduction of mandatory granular consent controls for cookie categories',
+          'Requirement to maintain detailed, auditable records of consent',
+          'Removal of legitimate interest as legal basis for analytics/advertising cookies',
+          'Increased penalties: fines up to €40 million or 6% of global turnover'
+        ],
+        detailedChanges: [
+          {
+            summary: "The updated regulation intensifies enforcement on prior consent and explicitly prohibits pre-ticked boxes and dark patterns in cookie consent mechanisms.",
+            analysis: "This change reflects a stricter regulatory stance emphasizing that consent must be freely given, specific, informed, and unambiguous. It affects all website operators targeting EU users, requiring them to redesign cookie banners to avoid manipulative designs and ensure no cookies are set before consent. This raises compliance costs but enhances user privacy protection.",
+            change: "Explicit prohibition of pre-ticked boxes and dark patterns; requirement that no non-essential cookies be set before active user consent.",
+            before_quote: "\"Consent must be obtained before any cookies are set, and pre-ticked boxes or implied consent are not valid.\" (Page 5, Section 3.2)",
+            after_quote: "\"Consent must be freely given, specific, informed, and unambiguous. Pre-ticked boxes or any form of default consent are prohibited. No cookies may be set prior to obtaining explicit consent.\" (Page 6, Section 3.2)",
+            type: "modification",
+            confidence: 1.00
+          },
+          {
+            summary: "The new regulation mandates granular consent options for different cookie categories rather than a single blanket acceptance.",
+            analysis: "This change requires websites to provide users with clear choices to accept or reject specific categories such as analytics, advertising, and functionality cookies. It increases transparency and user control but may complicate consent management for businesses. This aligns with GDPR principles and addresses user demand for more nuanced privacy controls.",
+            change: "Introduction of mandatory granular consent controls for cookie categories.",
+            before_quote: "\"Consent may be obtained via a single acceptance mechanism covering all cookies used.\" (Page 7, Section 4.1)",
+            after_quote: "\"Users must be provided with granular controls to consent to individual categories of cookies, including analytics, advertising, and functional cookies.\" (Page 8, Section 4.1)",
+            type: "modification",
+            confidence: 1.00
+          },
+          {
+            summary: "The updated regulation requires maintaining detailed records of user consent for auditability and compliance verification.",
+            analysis: "This procedural change obliges data controllers to keep verifiable logs of consent, including timestamps, categories accepted or declined, and user location. This facilitates regulatory audits and enforcement actions, increasing accountability but also administrative burden on organizations.",
+            change: "Requirement to maintain detailed, auditable records of consent.",
+            before_quote: "\"Controllers should keep records of consent but no specific format or detail is mandated.\" (Page 9, Section 5.3)",
+            after_quote: "\"Controllers must maintain verifiable records of each user's consent preferences, including timestamps, categories consented to or declined, and user location, to ensure auditability.\" (Page 10, Section 5.3)",
+            type: "procedural change",
+            confidence: 1.00
+          },
+          {
+            summary: "The new regulation clarifies that legitimate interest cannot be used as a legal basis for setting analytics or advertising cookies without consent.",
+            analysis: "This narrows the scope of lawful cookie use, emphasizing that consent is the only valid legal basis for non-essential cookies. It impacts businesses relying on legitimate interest to avoid consent mechanisms, requiring them to obtain explicit consent or cease such cookie use.",
+            change: "Removal of legitimate interest as a legal basis for analytics and advertising cookies.",
+            before_quote: "\"Legitimate interest may be used as a legal basis for analytics cookies under certain conditions.\" (Page 11, Section 6.2)",
+            after_quote: "\"Legitimate interest is not a valid legal basis for setting analytics or advertising cookies; explicit consent is required.\" (Page 12, Section 6.2)",
+            type: "modification",
+            confidence: 1.00
+          },
+          {
+            summary: "The updated regulation introduces stricter penalties and enforcement mechanisms for non-compliance, including higher fines and faster investigation timelines.",
+            analysis: "This change signals a shift from warnings to active enforcement with significant financial consequences for violations. It increases the risk for organizations that fail to comply, incentivizing prompt and thorough adherence to cookie consent rules.",
+            change: "Increased penalties and accelerated enforcement procedures.",
+            before_quote: "\"Penalties for non-compliance may include fines up to €20 million or 4% of global turnover.\" (Page 13, Section 7.1)",
+            after_quote: "\"Penalties have been increased, with fines up to €40 million or 6% of global turnover, and enforcement actions will be expedited to ensure swift compliance.\" (Page 14, Section 7.1)",
+            type: "penalty change",
+            confidence: 0.95
+          }
+        ]
+      },
+      {
+        id: 'v1',
+        version: '1.0',
+        uploadDate: '2024-01-10',
+        fileName: 'eu_cookie_consent_v1.pdf',
+        summary: 'Initial cookie consent framework under GDPR',
+        analysis: 'Initial version establishing basic cookie consent requirements under GDPR. Allowed for simpler consent mechanisms and legitimate interest basis for certain cookies.',
+        changes: []
+      }
+    ],
+    comments: [
+      {
+        id: 'c1',
+        author: 'Sarah Chen',
+        content: 'The prohibition of dark patterns will require complete redesign of our consent banners across all digital platforms. We need to audit current implementations immediately.',
+        timestamp: '2024-09-02 10:30'
+      },
+      {
+        id: 'c2',
+        author: 'Michael Rodriguez',
+        content: 'Legal team confirms that legitimate interest can no longer be used for analytics cookies. This will significantly impact our data collection capabilities.',
+        timestamp: '2024-09-02 14:15'
+      },
+      {
+        id: 'c3',
+        author: 'David Kim',
+        content: 'The increased penalties (€40M or 6% of turnover) make this a critical compliance priority. Recommend immediate project kickoff.',
+        timestamp: '2024-09-03 09:00'
+      }
+    ]
+  },
+  {
+    id: '2',
+    title: 'MiFID II Investment Services',
+    lastUpdated: '2024-08-01',
+    status: 'validated',
     versions: [
       {
         id: 'v4',
@@ -173,6 +283,102 @@ const mockRegulations: Regulation[] = [
     comments: []
   }
 ];
+
+const DetailedChangesView: React.FC<{ changes: DetailedChange[] }> = ({ changes }) => {
+  const [expandedChanges, setExpandedChanges] = useState<Set<number>>(new Set());
+
+  const toggleChange = (index: number) => {
+    const newExpanded = new Set(expandedChanges);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedChanges(newExpanded);
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'modification': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'procedural change': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'penalty change': return 'bg-red-100 text-red-800 border-red-200';
+      case 'addition': return 'bg-green-100 text-green-800 border-green-200';
+      case 'removal': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="font-medium text-lg">Detailed Change Analysis</h4>
+        <span className="text-sm text-gray-500">{changes.length} changes detected</span>
+      </div>
+      
+      {changes.map((change, index) => (
+        <div key={index} className="border rounded-lg bg-white">
+          <div 
+            className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => toggleChange(index)}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className={`px-2 py-1 text-xs rounded-full border ${getTypeColor(change.type)}`}>
+                    {change.type}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Confidence: {(change.confidence * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <h5 className="font-medium text-gray-900 mb-1">{change.summary}</h5>
+                <p className="text-sm text-gray-600">{change.change}</p>
+              </div>
+              <div className="ml-4">
+                {expandedChanges.has(index) ? (
+                  <ChevronDown size={20} className="text-gray-400" />
+                ) : (
+                  <ChevronRight size={20} className="text-gray-400" />
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {expandedChanges.has(index) && (
+            <div className="border-t bg-gray-50 p-4">
+              <div className="space-y-4">
+                <div>
+                  <h6 className="font-medium text-sm text-gray-900 mb-2 flex items-center gap-2">
+                    <Info size={16} className="text-blue-500" />
+                    Impact Analysis
+                  </h6>
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border">{change.analysis}</p>
+                </div>
+                
+                {change.before_quote && change.after_quote && (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <h6 className="font-medium text-sm text-gray-900 mb-2">Previous Version</h6>
+                      <div className="bg-red-50 border border-red-200 p-3 rounded">
+                        <p className="text-sm text-red-800">{change.before_quote}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <h6 className="font-medium text-sm text-gray-900 mb-2">Updated Version</h6>
+                      <div className="bg-green-50 border border-green-200 p-3 rounded">
+                        <p className="text-sm text-green-800">{change.after_quote}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const RegulationManagementPlatform: React.FC = () => {
   const [regulations, setRegulations] = useState<Regulation[]>(mockRegulations);
@@ -427,16 +633,22 @@ const RegulationManagementPlatform: React.FC = () => {
                               </span>
                             )}
                           </h4>
-                          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
-                            <ul className="space-y-2">
-                              {currentVersionData.changes.map((change, index) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <span className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></span>
-                                  <span className="text-gray-700">{change}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                          
+                          {/* Show detailed changes if available, otherwise show simple list */}
+                          {currentVersionData.detailedChanges && currentVersionData.detailedChanges.length > 0 ? (
+                            <DetailedChangesView changes={currentVersionData.detailedChanges} />
+                          ) : (
+                            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                              <ul className="space-y-2">
+                                {currentVersionData.changes.map((change, index) => (
+                                  <li key={index} className="flex items-start gap-2">
+                                    <span className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></span>
+                                    <span className="text-gray-700">{change}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
 
