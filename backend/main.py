@@ -64,6 +64,7 @@ def store_regulation(entry: dict = Body(...)):
 def add_version(reg_id: str, new_version: dict = Body(...)):
     new_version.setdefault("id", f"v{datetime.now().timestamp()}")
     new_version.setdefault("uploadDate", datetime.now().strftime("%Y-%m-%d"))
+    new_version.setdefault("detailedChanges", [])
 
     db.regulations.update_one(
         {"_id": ObjectId(reg_id)},
