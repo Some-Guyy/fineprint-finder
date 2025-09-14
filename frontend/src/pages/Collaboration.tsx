@@ -746,6 +746,7 @@ const RegulationManagementPlatform: React.FC = () => {
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold">
                           {selectedReg.versions.length === 1 ? 'Initial Version Analysis' : 'Version Analysis & Comparison'}
+                          <p className="text-xs text-gray-500 mt-1">Previous Version upload date: {currentVersionData.uploadDate}</p>
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
