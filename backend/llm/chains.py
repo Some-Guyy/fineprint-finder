@@ -70,7 +70,5 @@ def analyze_pdfs(before_key: str, after_key: str) -> list:
     response = chain_compare.invoke({"before_url": before_url, "after_url": after_url})
     content = response.content
     
-    print(content)
-    
     return json.loads(content)
  
