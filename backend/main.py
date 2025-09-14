@@ -2,7 +2,6 @@ import os
 import boto3
 import shutil
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Body
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pymongo import MongoClient
 from bson import ObjectId
@@ -10,17 +9,6 @@ from dotenv import load_dotenv
 from llm.chains import analyze_pdfs
 from datetime import datetime
 from pathlib import Path
-
-app = FastAPI()
-
-# Add CORS BEFORE defining endpoints
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    allow_origins=["*"]
-)
 
 load_dotenv()
 
