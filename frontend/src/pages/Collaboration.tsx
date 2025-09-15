@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info } from 'lucide-react';
 
 interface Regulation {
@@ -232,6 +232,22 @@ const mockRegulations: Regulation[] = [
       }
     ],
     comments: []
+  },
+  {
+    id: '5',
+    title: 'EU Cookie Directive',
+    lastUpdated: '2025-09-15',
+    status: 'pending',
+    versions: [
+      {
+        id: 'v1',
+        version: '1.0',
+        uploadDate: '2025-09-15',
+        fileName: 'gdpr_amendment_2024.pdf',
+        detailedChanges: []
+      }
+    ],
+    comments: []
   }
 ];
 
@@ -409,7 +425,8 @@ const RegulationManagementPlatform: React.FC = () => {
   const [editedChanges, setEditedChanges] = useState<{[key: string]: DetailedChange}>({});
   const [newTitle, setNewTitle] = useState('');
   const [newFile, setNewFile] = useState<File | null>(null);
-
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  
   const selectedReg = regulations.find(r => r.id === selectedRegulation);
   
   // Safely get version data
@@ -509,61 +526,40 @@ const RegulationManagementPlatform: React.FC = () => {
 
 // updating regulation with new version of it
   const handleUpdateRegulation = async (file: File | null | undefined) => {
-  if (!file) return;
+  if (!file) {
+    alert("Please select a PDF file.");
+    return;
+  }
 
   try {
-    // const formData = new FormData();
-    // formData.append("file", file);
+    const formData = new FormData();
+    formData.append("file", file);
 
-    // const res = await fetch("http://127.0.0.1:9000/upload-pdf", {
-    //   method: "POST",
-    //   body: formData,
-    // });
+    // Hardcoded regId for EU Cookie
+    const regId = "68c7a5d2fbc9f05cd226410e";
 
-    // if (!res.ok) throw new Error("Failed to upload PDF");
+    const res = await fetch(`http://127.0.0.1:9000/regulations/${regId}/versions`, {
+      method: "POST",
+      body: formData,
+    });
 
-    // const data = await res.json();
+    if (!res.ok) throw new Error("Failed to upload PDF");
 
-    // dummy data below for now
-    const newVersion = {
-      
-        id: 'v2',
-        version: '2.0',
-        uploadDate: '2024-09-01',
-        fileName: 'eu_cookie_consent_v2.pdf',
-        detailedChanges: [
-          {
-            id: "change-1",
-            summary: "The updated regulation intensifies enforcement on prior consent and explicitly prohibits pre-ticked boxes and dark patterns in cookie consent mechanisms.",
-            analysis: "This change reflects a stricter regulatory stance emphasizing that consent must be freely given, specific, informed, and unambiguous. It affects all website operators targeting EU users, requiring them to redesign cookie banners to avoid manipulative designs and ensure no cookies are set before consent. This raises compliance costs but enhances user privacy protection.",
-            change: "Explicit prohibition of pre-ticked boxes and dark patterns; requirement that no non-essential cookies be set before active user consent.",
-            before_quote: '"Consent must be obtained before any cookies are set, and pre-ticked boxes or implied consent are not valid." (Page 5, Section 3.2)',
-            after_quote: '"Consent must be freely given, specific, informed, and unambiguous. Pre-ticked boxes or any form of default consent are prohibited. No cookies may be set prior to obtaining explicit consent." (Page 6, Section 3.2)',
-            type: "modification",
-            confidence: 1.00
-          },
-          {
-            id: "change-2",
-            summary: "The new regulation mandates granular consent options for different cookie categories rather than a single blanket acceptance.",
-            analysis: "This change requires websites to provide users with clear choices to accept or reject specific categories such as analytics, advertising, and functionality cookies. It increases transparency and user control but may complicate consent management for businesses. This aligns with GDPR principles and addresses user demand for more nuanced privacy controls.",
-            change: "Introduction of mandatory granular consent controls for cookie categories.",
-            before_quote: '"Consent may be obtained via a single acceptance mechanism covering all cookies used." (Page 7, Section 4.1)',
-            after_quote: '"Users must be provided with granular controls to consent to individual categories of cookies, including analytics, advertising, and functional cookies." (Page 8, Section 4.1)',
-            type: "modification",
-            confidence: 1.00
-          }
-        ]
-    }
-    // Update the selected regulation's versions
+    const data = await res.json();
+
+    
     const updatedRegulations = regulations.map((reg) =>
       reg.id === selectedReg?.id
-        ? { ...reg, versions: [newVersion, ...reg.versions]}
+        ? { ...reg, versions: [data.version, ...reg.versions]}
         : reg
     );
 
     setRegulations(updatedRegulations);
-
     setNewFile(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; 
+    }
     alert("Email notification sent to team regarding new regulation version upload.");
   } catch (err) {
     console.error(err);
@@ -728,6 +724,7 @@ const RegulationManagementPlatform: React.FC = () => {
                       <span className="font-medium">Update Regulation</span>
                     </div>
                     <input
+                      ref={fileInputRef}
                       type="file"
                       accept=".pdf"
                       className="w-full text-sm"
