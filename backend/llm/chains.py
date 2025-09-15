@@ -23,8 +23,8 @@ Before: {before_url}
 After: {after_url}
 
 Output:
-- Respond with ONLY a JSON array (no extra text).
-- Each array element must be a JSON object with these fields:
+Respond with ONLY a JSON array (no extra text) and each array element must be a JSON object with these fields:
+- id (string, must increment sequentially: change-1, change-2, …)
 - summary (string, one sentence in plain language)
 - analysis (string, 2–4 sentences on implications, scope, who is affected)
 - change (string, precise description of the edit)
