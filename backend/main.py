@@ -2,6 +2,7 @@ import os
 import boto3
 import shutil
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Body
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pymongo import MongoClient
 from bson import ObjectId
@@ -11,6 +12,17 @@ from datetime import datetime
 from pathlib import Path
 
 load_dotenv()
+
+app = FastAPI()
+
+# Add CORS BEFORE defining endpoints
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_origins=["*"]
+)
 
 # Mongo setup
 db_user = os.getenv("DB_USER")
@@ -24,7 +36,6 @@ collection = db["regulations"]
 s3 = boto3.client("s3")
 bucket = os.getenv("S3_BUCKET", "fypwhere")
 
-app = FastAPI()
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -41,39 +52,42 @@ def startup_db_client():
 async def health_check():
     return {"status": "healthy"}
 
-# Upload first PDF to keep track of regulation
+import logging
+
 @app.post("/regulations")
 async def create_regulation(title: str = Body(...), file: UploadFile = File(...)):
-    if file.content_type != "application/pdf":
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    try:
+        if file.content_type != "application/pdf":
+            raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
-    # Save locally + upload to S3
-    temp_path = UPLOAD_DIR / file.filename
-    with open(temp_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        temp_path = UPLOAD_DIR / file.filename
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    s3_key = f"{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}_{file.filename}"
-    s3.upload_file(str(temp_path), bucket, s3_key)
+        s3_key = f"{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}_{file.filename}"
+        s3.upload_file(str(temp_path), bucket, s3_key)
 
-    # Insert into Mongo
-    doc = {
-        "title": title,
-        "status": "pending",
-        "versions": [
-            {
-                "id": "v1",
-                "version": "1.0",
-                "uploadDate": datetime.now().strftime("%Y-%m-%d"),
-                "s3Key": s3_key,
-                "detailedChanges": [],
-                "explanation": ""
-            }
-        ],
-        "comments": []
-    }
-    result = collection.insert_one(doc)
+        doc = {
+            "title": title,
+            "status": "pending",
+            "versions": [
+                {
+                    "id": "v1",
+                    "version": "1.0",
+                    "uploadDate": datetime.now().strftime("%Y-%m-%d"),
+                    "s3Key": s3_key,
+                    "detailedChanges": [],
+                    "explanation": ""
+                }
+            ],
+            "comments": []
+        }
+        result = collection.insert_one(doc)
+        return {"id": str(result.inserted_id), "message": "Regulation created"}
+    except Exception as e:
+        logging.exception("Failed to create regulation")
+        raise HTTPException(status_code=500, detail=str(e))
 
-    return {"id": str(result.inserted_id), "message": "Regulation created"}
 
 # Upload another PDF to update the regulation
 @app.post("/regulations/{reg_id}/versions")

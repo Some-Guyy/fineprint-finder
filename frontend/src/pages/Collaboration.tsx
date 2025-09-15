@@ -463,10 +463,11 @@ const RegulationManagementPlatform: React.FC = () => {
   try {
     // Prepare form data to send to backend
     const formData = new FormData();
+    formData.append("title", newTitle);
     formData.append("file", newFile);
 
     // POST to backend
-    const res = await fetch("http://127.0.0.1:9000/upload-pdf", {
+    const res = await fetch("http://127.0.0.1:9000/regulations", {
       method: "POST",
       body: formData,
     });
