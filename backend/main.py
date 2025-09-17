@@ -1,9 +1,8 @@
 import os
 import boto3
 import shutil
-from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Body
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse
 from db.mongo import mongo_client, regulation_collection
 from bson import ObjectId
 from dotenv import load_dotenv
@@ -11,6 +10,7 @@ from llm.chains import analyze_pdfs
 from datetime import datetime
 from pathlib import Path
 import logging
+from api.utils import router as utils_router
 
 load_dotenv()
 
@@ -40,9 +40,7 @@ def startup_db_client():
     except Exception as e:
         print("MongoDB connection failed:", e)
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+app.include_router(utils_router)
 
 @app.get("/regulations")
 async def get_all_regulations():
@@ -133,8 +131,3 @@ async def add_regulation_version(reg_id: str, file: UploadFile = File(...)):
     )
 
     return {"message": "New version added", "version": new_version}
-
-@app.api_route("/{path_name:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
-async def catch_all(request: Request, path_name: str):
-    print("Unhandled route:", request.url.path)
-    return PlainTextResponse("Route not found", status_code=404)
