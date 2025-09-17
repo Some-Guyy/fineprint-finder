@@ -1,7 +1,7 @@
 import json
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_perplexity import ChatPerplexity
-from services.s3 import s3, bucket
+from services.s3 import s3_client, s3_bucket
 
 chat_perplexity = ChatPerplexity(temperature=0, model="sonar")
 
@@ -54,11 +54,11 @@ chain_compare = prompt_compare | chat_perplexity
 
 def analyze_pdfs(before_key: str, after_key: str) -> list:
 
-    before_url = s3.generate_presigned_url(
-        "get_object", Params={"Bucket": bucket, "Key": before_key}, ExpiresIn=100
+    before_url = s3_client.generate_presigned_url(
+        "get_object", Params={"Bucket": s3_bucket, "Key": before_key}, ExpiresIn=100
     )
-    after_url = s3.generate_presigned_url(
-        "get_object", Params={"Bucket": bucket, "Key": after_key}, ExpiresIn=100
+    after_url = s3_client.generate_presigned_url(
+        "get_object", Params={"Bucket": s3_bucket, "Key": after_key}, ExpiresIn=100
     )
     response = chain_compare.invoke({"before_url": before_url, "after_url": after_url})
     content = response.content

@@ -1,5 +1,5 @@
 import boto3
 import os
 
-s3 = boto3.client("s3")
-bucket = os.getenv("S3_BUCKET", "fypwhere")
+s3_client = boto3.client("s3")
+s3_bucket = os.getenv("S3_BUCKET", "fypwhere")
