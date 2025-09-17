@@ -1,8 +1,8 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info } from 'lucide-react';
 
 interface Regulation {
-  id: string;
+  _id: string;
   title: string;
   lastUpdated: string;
   status: 'pending' | 'validated';
@@ -36,220 +36,220 @@ interface Comment {
   timestamp: string;
 }
 
-const mockRegulations: Regulation[] = [
-  {
-    id: '1',
-    title: 'EU Cookie Consent Regulation 2024',
-    lastUpdated: '2024-09-01',
-    status: 'pending',
-    versions: [
-      {
-        id: 'v2',
-        version: '2.0',
-        uploadDate: '2024-09-01',
-        fileName: 'eu_cookie_consent_v2.pdf',
-        detailedChanges: [
-          {
-            id: "change-1",
-            summary: "The updated regulation intensifies enforcement on prior consent and explicitly prohibits pre-ticked boxes and dark patterns in cookie consent mechanisms.",
-            analysis: "This change reflects a stricter regulatory stance emphasizing that consent must be freely given, specific, informed, and unambiguous. It affects all website operators targeting EU users, requiring them to redesign cookie banners to avoid manipulative designs and ensure no cookies are set before consent. This raises compliance costs but enhances user privacy protection.",
-            change: "Explicit prohibition of pre-ticked boxes and dark patterns; requirement that no non-essential cookies be set before active user consent.",
-            before_quote: '"Consent must be obtained before any cookies are set, and pre-ticked boxes or implied consent are not valid." (Page 5, Section 3.2)',
-            after_quote: '"Consent must be freely given, specific, informed, and unambiguous. Pre-ticked boxes or any form of default consent are prohibited. No cookies may be set prior to obtaining explicit consent." (Page 6, Section 3.2)',
-            type: "modification",
-            confidence: 1.00
-          },
-          {
-            id: "change-2",
-            summary: "The new regulation mandates granular consent options for different cookie categories rather than a single blanket acceptance.",
-            analysis: "This change requires websites to provide users with clear choices to accept or reject specific categories such as analytics, advertising, and functionality cookies. It increases transparency and user control but may complicate consent management for businesses. This aligns with GDPR principles and addresses user demand for more nuanced privacy controls.",
-            change: "Introduction of mandatory granular consent controls for cookie categories.",
-            before_quote: '"Consent may be obtained via a single acceptance mechanism covering all cookies used." (Page 7, Section 4.1)',
-            after_quote: '"Users must be provided with granular controls to consent to individual categories of cookies, including analytics, advertising, and functional cookies." (Page 8, Section 4.1)',
-            type: "modification",
-            confidence: 1.00
-          },
-          {
-            id: "change-3",
-            summary: "The updated regulation requires maintaining detailed records of user consent for auditability and compliance verification.",
-            analysis: "This procedural change obliges data controllers to keep verifiable logs of consent, including timestamps, categories accepted or declined, and user location. This facilitates regulatory audits and enforcement actions, increasing accountability but also administrative burden on organizations.",
-            change: "Requirement to maintain detailed, auditable records of consent.",
-            before_quote: '"Controllers should keep records of consent but no specific format or detail is mandated." (Page 9, Section 5.3)',
-            after_quote: '"Controllers must maintain verifiable records of each user\'s consent preferences, including timestamps, categories consented to or declined, and user location, to ensure auditability." (Page 10, Section 5.3)',
-            type: "procedural change",
-            confidence: 1.00
-          },
-          {
-            id: "change-4",
-            summary: "The new regulation clarifies that legitimate interest cannot be used as a legal basis for setting analytics or advertising cookies without consent.",
-            analysis: "This narrows the scope of lawful cookie use, emphasizing that consent is the only valid legal basis for non-essential cookies. It impacts businesses relying on legitimate interest to avoid consent mechanisms, requiring them to obtain explicit consent or cease such cookie use.",
-            change: "Removal of legitimate interest as a legal basis for analytics and advertising cookies.",
-            before_quote: '"Legitimate interest may be used as a legal basis for analytics cookies under certain conditions." (Page 11, Section 6.2)',
-            after_quote: '"Legitimate interest is not a valid legal basis for setting analytics or advertising cookies; explicit consent is required." (Page 12, Section 6.2)',
-            type: "modification",
-            confidence: 1.00
-          },
-          {
-            id: "change-5",
-            summary: "The updated regulation introduces stricter penalties and enforcement mechanisms for non-compliance, including higher fines and faster investigation timelines.",
-            analysis: "This change signals a shift from warnings to active enforcement with significant financial consequences for violations. It increases the risk for organizations that fail to comply, incentivizing prompt and thorough adherence to cookie consent rules.",
-            change: "Increased penalties and accelerated enforcement procedures.",
-            before_quote: '"Penalties for non-compliance may include fines up to €20 million or 4% of global turnover." (Page 13, Section 7.1)',
-            after_quote: '"Penalties have been increased, with fines up to €40 million or 6% of global turnover, and enforcement actions will be expedited to ensure swift compliance." (Page 14, Section 7.1)',
-            type: "penalty change",
-            confidence: 0.95
-          }
-        ]
-      },
-      {
-        id: 'v1',
-        version: '1.0',
-        uploadDate: '2024-01-10',
-        fileName: 'eu_cookie_consent_v1.pdf',
-        detailedChanges: []
-      }
-    ],
-    comments: [
-      {
-        id: 'c1',
-        author: 'Sarah Chen',
-        content: 'The prohibition of dark patterns will require complete redesign of our consent banners across all digital platforms. We need to audit current implementations immediately.',
-        timestamp: '2024-09-02 10:30'
-      },
-      {
-        id: 'c2',
-        author: 'Michael Rodriguez',
-        content: 'Legal team confirms that legitimate interest can no longer be used for analytics cookies. This will significantly impact our data collection capabilities.',
-        timestamp: '2024-09-02 14:15'
-      },
-      {
-        id: 'c3',
-        author: 'David Kim',
-        content: 'The increased penalties (€40M or 6% of turnover) make this a critical compliance priority. Recommend immediate project kickoff.',
-        timestamp: '2024-09-03 09:00'
-      }
-    ]
-  },
-  {
-    id: '2',
-    title: 'MiFID II Investment Services',
-    lastUpdated: '2024-08-01',
-    status: 'validated',
-    versions: [
-      {
-        id: 'v4',
-        version: '4.0',
-        uploadDate: '2024-09-01',
-        fileName: 'mifid_ii_v4.pdf',
-        detailedChanges: []
-      },
-      {
-        id: 'v3',
-        version: '3.0',
-        uploadDate: '2024-06-15',
-        fileName: 'mifid_ii_v3.pdf',
-        detailedChanges: []
-      },
-      {
-        id: 'v2',
-        version: '2.0',
-        uploadDate: '2024-03-15',
-        fileName: 'mifid_ii_v2.pdf',
-        detailedChanges: []
-      },
-      {
-        id: 'v1',
-        version: '1.0',
-        uploadDate: '2024-01-10',
-        fileName: 'mifid_ii_v1.pdf',
-        detailedChanges: []
-      }
-    ],
-    comments: [
-      {
-        id: 'c1',
-        author: 'Sarah Chen',
-        content: 'The ESG requirements in v4.0 will require significant IT infrastructure changes. We should prioritize the algorithmic trading controls.',
-        timestamp: '2024-08-16 10:30'
-      },
-      {
-        id: 'c2',
-        author: 'Michael Rodriguez',
-        content: 'Compliance team is already working on the ESG scoring methodology. Timeline looks tight for Q1 2025.',
-        timestamp: '2024-08-16 14:15'
-      }
-    ]
-  },
-  {
-    id: '3',
-    title: 'Basel III Capital Requirements',
-    lastUpdated: '2024-08-20',
-    status: 'validated',
-    versions: [
-      {
-        id: 'v3',
-        version: '3.0',
-        uploadDate: '2024-08-20',
-        fileName: 'basel_iii_v3.pdf',
-        detailedChanges: []
-      },
-      {
-        id: 'v2',
-        version: '2.0',
-        uploadDate: '2024-05-15',
-        fileName: 'basel_iii_v2.pdf',
-        detailedChanges: []
-      },
-      {
-        id: 'v1',
-        version: '1.0',
-        uploadDate: '2024-01-10',
-        fileName: 'basel_iii_v1.pdf',
-        detailedChanges: []
-      }
-    ],
-    comments: [
-      {
-        id: 'c1',
-        author: 'David Kim',
-        content: 'Climate risk integration is complex but necessary. Risk team is evaluating third-party climate data providers.',
-        timestamp: '2024-08-21 09:45'
-      }
-    ]
-  },
-  {
-    id: '4',
-    title: 'GDPR Privacy Amendment 2024',
-    lastUpdated: '2024-07-10',
-    status: 'validated',
-    versions: [
-      {
-        id: 'v1',
-        version: '1.0',
-        uploadDate: '2024-07-10',
-        fileName: 'gdpr_amendment_2024.pdf',
-        detailedChanges: []
-      }
-    ],
-    comments: []
-  },
-  {
-    id: '5',
-    title: 'EU Cookie Directive',
-    lastUpdated: '2025-09-15',
-    status: 'pending',
-    versions: [
-      {
-        id: 'v1',
-        version: '1.0',
-        uploadDate: '2025-09-15',
-        fileName: 'gdpr_amendment_2024.pdf',
-        detailedChanges: []
-      }
-    ],
-    comments: []
-  }
-];
+// const mockRegulations: Regulation[] = [
+//   {
+//     id: '1',
+//     title: 'EU Cookie Consent Regulation 2024',
+//     lastUpdated: '2024-09-01',
+//     status: 'pending',
+//     versions: [
+//       {
+//         id: 'v2',
+//         version: '2.0',
+//         uploadDate: '2024-09-01',
+//         fileName: 'eu_cookie_consent_v2.pdf',
+//         detailedChanges: [
+//           {
+//             id: "change-1",
+//             summary: "The updated regulation intensifies enforcement on prior consent and explicitly prohibits pre-ticked boxes and dark patterns in cookie consent mechanisms.",
+//             analysis: "This change reflects a stricter regulatory stance emphasizing that consent must be freely given, specific, informed, and unambiguous. It affects all website operators targeting EU users, requiring them to redesign cookie banners to avoid manipulative designs and ensure no cookies are set before consent. This raises compliance costs but enhances user privacy protection.",
+//             change: "Explicit prohibition of pre-ticked boxes and dark patterns; requirement that no non-essential cookies be set before active user consent.",
+//             before_quote: '"Consent must be obtained before any cookies are set, and pre-ticked boxes or implied consent are not valid." (Page 5, Section 3.2)',
+//             after_quote: '"Consent must be freely given, specific, informed, and unambiguous. Pre-ticked boxes or any form of default consent are prohibited. No cookies may be set prior to obtaining explicit consent." (Page 6, Section 3.2)',
+//             type: "modification",
+//             confidence: 1.00
+//           },
+//           {
+//             id: "change-2",
+//             summary: "The new regulation mandates granular consent options for different cookie categories rather than a single blanket acceptance.",
+//             analysis: "This change requires websites to provide users with clear choices to accept or reject specific categories such as analytics, advertising, and functionality cookies. It increases transparency and user control but may complicate consent management for businesses. This aligns with GDPR principles and addresses user demand for more nuanced privacy controls.",
+//             change: "Introduction of mandatory granular consent controls for cookie categories.",
+//             before_quote: '"Consent may be obtained via a single acceptance mechanism covering all cookies used." (Page 7, Section 4.1)',
+//             after_quote: '"Users must be provided with granular controls to consent to individual categories of cookies, including analytics, advertising, and functional cookies." (Page 8, Section 4.1)',
+//             type: "modification",
+//             confidence: 1.00
+//           },
+//           {
+//             id: "change-3",
+//             summary: "The updated regulation requires maintaining detailed records of user consent for auditability and compliance verification.",
+//             analysis: "This procedural change obliges data controllers to keep verifiable logs of consent, including timestamps, categories accepted or declined, and user location. This facilitates regulatory audits and enforcement actions, increasing accountability but also administrative burden on organizations.",
+//             change: "Requirement to maintain detailed, auditable records of consent.",
+//             before_quote: '"Controllers should keep records of consent but no specific format or detail is mandated." (Page 9, Section 5.3)',
+//             after_quote: '"Controllers must maintain verifiable records of each user\'s consent preferences, including timestamps, categories consented to or declined, and user location, to ensure auditability." (Page 10, Section 5.3)',
+//             type: "procedural change",
+//             confidence: 1.00
+//           },
+//           {
+//             id: "change-4",
+//             summary: "The new regulation clarifies that legitimate interest cannot be used as a legal basis for setting analytics or advertising cookies without consent.",
+//             analysis: "This narrows the scope of lawful cookie use, emphasizing that consent is the only valid legal basis for non-essential cookies. It impacts businesses relying on legitimate interest to avoid consent mechanisms, requiring them to obtain explicit consent or cease such cookie use.",
+//             change: "Removal of legitimate interest as a legal basis for analytics and advertising cookies.",
+//             before_quote: '"Legitimate interest may be used as a legal basis for analytics cookies under certain conditions." (Page 11, Section 6.2)',
+//             after_quote: '"Legitimate interest is not a valid legal basis for setting analytics or advertising cookies; explicit consent is required." (Page 12, Section 6.2)',
+//             type: "modification",
+//             confidence: 1.00
+//           },
+//           {
+//             id: "change-5",
+//             summary: "The updated regulation introduces stricter penalties and enforcement mechanisms for non-compliance, including higher fines and faster investigation timelines.",
+//             analysis: "This change signals a shift from warnings to active enforcement with significant financial consequences for violations. It increases the risk for organizations that fail to comply, incentivizing prompt and thorough adherence to cookie consent rules.",
+//             change: "Increased penalties and accelerated enforcement procedures.",
+//             before_quote: '"Penalties for non-compliance may include fines up to €20 million or 4% of global turnover." (Page 13, Section 7.1)',
+//             after_quote: '"Penalties have been increased, with fines up to €40 million or 6% of global turnover, and enforcement actions will be expedited to ensure swift compliance." (Page 14, Section 7.1)',
+//             type: "penalty change",
+//             confidence: 0.95
+//           }
+//         ]
+//       },
+//       {
+//         id: 'v1',
+//         version: '1.0',
+//         uploadDate: '2024-01-10',
+//         fileName: 'eu_cookie_consent_v1.pdf',
+//         detailedChanges: []
+//       }
+//     ],
+//     comments: [
+//       {
+//         id: 'c1',
+//         author: 'Sarah Chen',
+//         content: 'The prohibition of dark patterns will require complete redesign of our consent banners across all digital platforms. We need to audit current implementations immediately.',
+//         timestamp: '2024-09-02 10:30'
+//       },
+//       {
+//         id: 'c2',
+//         author: 'Michael Rodriguez',
+//         content: 'Legal team confirms that legitimate interest can no longer be used for analytics cookies. This will significantly impact our data collection capabilities.',
+//         timestamp: '2024-09-02 14:15'
+//       },
+//       {
+//         id: 'c3',
+//         author: 'David Kim',
+//         content: 'The increased penalties (€40M or 6% of turnover) make this a critical compliance priority. Recommend immediate project kickoff.',
+//         timestamp: '2024-09-03 09:00'
+//       }
+//     ]
+//   },
+//   {
+//     id: '2',
+//     title: 'MiFID II Investment Services',
+//     lastUpdated: '2024-08-01',
+//     status: 'validated',
+//     versions: [
+//       {
+//         id: 'v4',
+//         version: '4.0',
+//         uploadDate: '2024-09-01',
+//         fileName: 'mifid_ii_v4.pdf',
+//         detailedChanges: []
+//       },
+//       {
+//         id: 'v3',
+//         version: '3.0',
+//         uploadDate: '2024-06-15',
+//         fileName: 'mifid_ii_v3.pdf',
+//         detailedChanges: []
+//       },
+//       {
+//         id: 'v2',
+//         version: '2.0',
+//         uploadDate: '2024-03-15',
+//         fileName: 'mifid_ii_v2.pdf',
+//         detailedChanges: []
+//       },
+//       {
+//         id: 'v1',
+//         version: '1.0',
+//         uploadDate: '2024-01-10',
+//         fileName: 'mifid_ii_v1.pdf',
+//         detailedChanges: []
+//       }
+//     ],
+//     comments: [
+//       {
+//         id: 'c1',
+//         author: 'Sarah Chen',
+//         content: 'The ESG requirements in v4.0 will require significant IT infrastructure changes. We should prioritize the algorithmic trading controls.',
+//         timestamp: '2024-08-16 10:30'
+//       },
+//       {
+//         id: 'c2',
+//         author: 'Michael Rodriguez',
+//         content: 'Compliance team is already working on the ESG scoring methodology. Timeline looks tight for Q1 2025.',
+//         timestamp: '2024-08-16 14:15'
+//       }
+//     ]
+//   },
+//   {
+//     id: '3',
+//     title: 'Basel III Capital Requirements',
+//     lastUpdated: '2024-08-20',
+//     status: 'validated',
+//     versions: [
+//       {
+//         id: 'v3',
+//         version: '3.0',
+//         uploadDate: '2024-08-20',
+//         fileName: 'basel_iii_v3.pdf',
+//         detailedChanges: []
+//       },
+//       {
+//         id: 'v2',
+//         version: '2.0',
+//         uploadDate: '2024-05-15',
+//         fileName: 'basel_iii_v2.pdf',
+//         detailedChanges: []
+//       },
+//       {
+//         id: 'v1',
+//         version: '1.0',
+//         uploadDate: '2024-01-10',
+//         fileName: 'basel_iii_v1.pdf',
+//         detailedChanges: []
+//       }
+//     ],
+//     comments: [
+//       {
+//         id: 'c1',
+//         author: 'David Kim',
+//         content: 'Climate risk integration is complex but necessary. Risk team is evaluating third-party climate data providers.',
+//         timestamp: '2024-08-21 09:45'
+//       }
+//     ]
+//   },
+//   {
+//     id: '4',
+//     title: 'GDPR Privacy Amendment 2024',
+//     lastUpdated: '2024-07-10',
+//     status: 'validated',
+//     versions: [
+//       {
+//         id: 'v1',
+//         version: '1.0',
+//         uploadDate: '2024-07-10',
+//         fileName: 'gdpr_amendment_2024.pdf',
+//         detailedChanges: []
+//       }
+//     ],
+//     comments: []
+//   },
+//   {
+//     id: '5',
+//     title: 'EU Cookie Directive',
+//     lastUpdated: '2025-09-15',
+//     status: 'pending',
+//     versions: [
+//       {
+//         id: 'v1',
+//         version: '1.0',
+//         uploadDate: '2025-09-15',
+//         fileName: 'gdpr_amendment_2024.pdf',
+//         detailedChanges: []
+//       }
+//     ],
+//     comments: []
+//   }
+// ];
 
 const DetailedChangesView: React.FC<{ 
   changes: DetailedChange[]; 
@@ -417,7 +417,9 @@ const DetailedChangesView: React.FC<{
 };
 
 const RegulationManagementPlatform: React.FC = () => {
-  const [regulations, setRegulations] = useState<Regulation[]>(mockRegulations);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [regulations, setRegulations] = useState<Regulation[]>([]);
   const [selectedRegulation, setSelectedRegulation] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>('latest');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -429,7 +431,83 @@ const RegulationManagementPlatform: React.FC = () => {
   const [isUpdatingRegulation, setIsUpdatingRegulation] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   
-  const selectedReg = regulations.find(r => r.id === selectedRegulation);
+  // Fetch regulations on component mount
+  useEffect(() => {
+    const fetchRegulations = async () => {
+      try {
+        setLoading(true);
+        
+        const response = await fetch('http://127.0.0.1:9000/regulations');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch regulations: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+
+        // console.log(data)
+        
+        // Sort versions within each regulation to ensure latest version is first
+        const sortedData = data.map((regulation: Regulation) => ({
+          ...regulation,
+          versions: [...regulation.versions].sort((a, b) => {
+            // First try to sort by version number (assuming semantic versioning like "2.0", "1.0")
+            const versionA = parseFloat(a.version);
+            const versionB = parseFloat(b.version);
+            
+            if (!isNaN(versionA) && !isNaN(versionB)) {
+              return versionB - versionA; // Descending order (latest first)
+            }
+            
+            // Fallback to sorting by upload date if version parsing fails
+            return new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime();
+          })
+        }));
+        
+        setRegulations(sortedData);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching regulations:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch regulations');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRegulations();
+  }, []);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading regulations...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && regulations.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Regulations</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+  const selectedReg = regulations.find(r => r._id === selectedRegulation);
   
   // Safely get version data
   let currentVersionData: RegulationVersion | null = null;
@@ -453,12 +531,13 @@ const RegulationManagementPlatform: React.FC = () => {
     }
     isOldestVersion = !previousVersionData;
   }
+
   // console.log(selectedReg)
   // console.log(currentVersionData)
   // Change from pending to verified or vice versa
   const handleStatusChange = (regId: string) => {
     setRegulations(prev => prev.map(reg => 
-      reg.id === regId 
+      reg._id === regId 
         ? { ...reg, status: reg.status === 'pending' ? 'validated' : 'pending' }
         : reg
     ));
@@ -469,11 +548,10 @@ const RegulationManagementPlatform: React.FC = () => {
   // delete regulation
   const handleDelete = (regId: string) => {
     if (window.confirm('Are you sure you want to delete this regulation?')) {
-      setRegulations(prev => prev.filter(reg => reg.id !== regId));
+      setRegulations(prev => prev.filter(reg => reg._id !== regId));
       setSelectedRegulation(null);
     }
   };
-
 
   // add brand new regulation
   const handleAddRegulation = async () => {
@@ -500,7 +578,7 @@ const RegulationManagementPlatform: React.FC = () => {
       await res.json(); 
 
       const newReg: Regulation = {
-        id: Date.now().toString(),
+        _id: Date.now().toString(),
         title: newTitle,
         lastUpdated: new Date().toISOString().split('T')[0],
         status: 'pending',
@@ -527,7 +605,7 @@ const RegulationManagementPlatform: React.FC = () => {
     }
   };
 
-// updating regulation with new version of it
+  // updating regulation with new version of it
   const handleUpdateRegulation = async (file: File | null | undefined) => {
     if (!file) {
       alert("Please select a PDF file.");
@@ -540,8 +618,7 @@ const RegulationManagementPlatform: React.FC = () => {
       const formData = new FormData();
       formData.append("file", file);
 
-      // Hardcoded regId for EU Cookie
-      const regId = "68c7a5d2fbc9f05cd226410e";
+      const regId = selectedReg?._id;
 
       const res = await fetch(`http://127.0.0.1:9000/regulations/${regId}/versions`, {
         method: "POST",
@@ -554,7 +631,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
       
       const updatedRegulations = regulations.map((reg) =>
-        reg.id === selectedReg?.id
+        reg._id === selectedReg?._id
           ? { ...reg, versions: [data.version, ...reg.versions]}
           : reg
       );
@@ -574,14 +651,14 @@ const RegulationManagementPlatform: React.FC = () => {
     }
   };
 
-  // edit function for changes
+  // Editing changes
   const handleEditChange = (changeId: string) => {
     if (editingChangeId === changeId) {
       // Save the edited change
       const editedChange = editedChanges[changeId];
       if (editedChange && selectedReg && currentVersionData) {
         setRegulations(prev => prev.map(reg => 
-          reg.id === selectedReg.id 
+          reg._id === selectedReg._id 
             ? {
                 ...reg,
                 versions: reg.versions.map(v => 
@@ -615,7 +692,20 @@ const RegulationManagementPlatform: React.FC = () => {
   };
 
   return (
+
     <div className="min-h-screen bg-gray-50">
+      {/* Show error banner if there was an error */}
+      {error && regulations.length > 0 && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4">
+          <div className="flex">
+            <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
+            <p className="text-yellow-700">
+              Unable to fetch latest data. Showing cached results. Error: {error}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -642,10 +732,10 @@ const RegulationManagementPlatform: React.FC = () => {
             <div className="divide-y">
               {regulations.map((regulation) => (
                 <div
-                  key={regulation.id}
-                  onClick={() => setSelectedRegulation(regulation.id)}
+                  key={regulation._id}
+                  onClick={() => setSelectedRegulation(regulation._id)}
                   className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedRegulation === regulation.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
+                    selectedRegulation === regulation._id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -705,14 +795,14 @@ const RegulationManagementPlatform: React.FC = () => {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleStatusChange(selectedReg.id)}
+                        onClick={() => handleStatusChange(selectedReg._id)}
                         className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
                       >
                         <Mail size={14} />
                         {selectedReg.status === 'pending' ? 'Validate' : 'Mark Pending'}
                       </button>
                       <button
-                        onClick={() => handleDelete(selectedReg.id)}
+                        onClick={() => handleDelete(selectedReg._id)}
                         className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-red-50 text-red-600"
                       >
                         <Trash2 size={14} />
