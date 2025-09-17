@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from llm.chains import analyze_pdfs
 from datetime import datetime
 from pathlib import Path
+import logging
 
 load_dotenv()
 
@@ -36,7 +37,6 @@ collection = db["regulations"]
 s3 = boto3.client("s3")
 bucket = os.getenv("S3_BUCKET", "fypwhere")
 
-
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
@@ -51,8 +51,6 @@ def startup_db_client():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
-
-import logging
 
 @app.post("/regulations")
 async def create_regulation(title: str = Body(...), file: UploadFile = File(...)):
