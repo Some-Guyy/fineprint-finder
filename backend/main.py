@@ -52,6 +52,18 @@ def startup_db_client():
 async def health_check():
     return {"status": "healthy"}
 
+@app.get("/regulations")
+async def get_all_regulations():
+    try:
+        docs = []
+        for doc in collection.find({}):
+            doc["_id"] = str(doc["_id"])
+            docs.append(doc)
+        return docs
+    except Exception as e:
+        logging.exception("Failed to get all regulations")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/regulations")
 async def create_regulation(title: str = Body(...), file: UploadFile = File(...)):
     try:
