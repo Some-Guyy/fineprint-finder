@@ -1,3 +1,5 @@
+import io
+import pdfplumber
 import json
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_perplexity import ChatPerplexity
@@ -14,8 +16,8 @@ system_compare = (
 human_compare = """User:
 Compare the regulation Before vs After at these links:
 
-Before: {before_url}
-After: {after_url}
+Before: {before_text}
+After: {after_text}
 
 Output:
 Respond with ONLY a JSON array (no extra text) and each array element must be a JSON object with these fields:
@@ -53,16 +55,37 @@ prompt_compare = ChatPromptTemplate.from_messages([
 
 chain_compare = prompt_compare | chat_perplexity
 
-def analyze_pdfs(before_key: str, after_key: str) -> list:
 
-    before_url = s3_client.generate_presigned_url(
-        "get_object", Params={"Bucket": s3_bucket, "Key": before_key}, ExpiresIn=100
-    )
-    after_url = s3_client.generate_presigned_url(
-        "get_object", Params={"Bucket": s3_bucket, "Key": after_key}, ExpiresIn=100
-    )
-    response = chain_compare.invoke({"before_url": before_url, "after_url": after_url})
+def analyze_pdfs(before_key: str, after_key: str):
+    # Extract text from both PDFs
+    before_text = extract_text_from_s3(before_key)
+    after_text = extract_text_from_s3(after_key)
+
+    # Pass text into your LLM chain
+    response = chain_compare.invoke({
+        "before_text": before_text,
+        "after_text": after_text
+    })
+
     content = response.content
-    
-    return json.loads(content)
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError as e:
+
+        return {
+            "error" : "Invalid JSON from LLM",
+            "details": str(e),
+            }
+
+def extract_text_from_s3(key: str) -> str:
+    """Download a PDF from S3 and extract its text."""
+    obj = s3_client.get_object(Bucket=s3_bucket, Key=key)
+    pdf_stream = io.BytesIO(obj["Body"].read())
+
+    text = []
+    with pdfplumber.open(pdf_stream) as pdf:
+        for page in pdf.pages:
+            text.append(page.extract_text() or "")
+    return "\n".join(text)
  

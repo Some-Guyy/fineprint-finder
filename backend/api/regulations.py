@@ -82,6 +82,15 @@ async def add_regulation_version(reg_id: str, file: UploadFile = File(...)):
     before_key = reg_doc["versions"][-1]["s3Key"]
 
     detailed_changes = analyze_pdfs(before_key, s3_key)
+    
+    if not isinstance(detailed_changes, list):
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "Analysis failed",
+                "details": detailed_changes
+            }
+    )
 
     upload_date = datetime.now().strftime('%Y-%m-%d')
 
