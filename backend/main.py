@@ -1,5 +1,3 @@
-import os
-import boto3
 import shutil
 from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 import logging
 from api.utils import router as utils_router
+from services.s3 import s3_client, s3_bucket
 
 load_dotenv()
 
@@ -24,10 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
     allow_origins=["*"]
 )
-
-# s3 setup
-s3 = boto3.client("s3")
-bucket = os.getenv("S3_BUCKET", "fypwhere")
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -63,7 +58,7 @@ async def create_regulation(title: str = Body(...), file: UploadFile = File(...)
             shutil.copyfileobj(file.file, buffer)
 
         s3_key = f"{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}_{file.filename}"
-        s3.upload_file(str(temp_path), bucket, s3_key)
+        s3_client.upload_file(str(temp_path), s3_bucket, s3_key)
 
         doc = {
             "title": title,
@@ -98,7 +93,7 @@ async def add_regulation_version(reg_id: str, file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
 
     s3_key = f"{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}_{file.filename}"
-    s3.upload_file(str(temp_path), bucket, s3_key)
+    s3_client.upload_file(str(temp_path), s3_bucket, s3_key)
 
     reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
     if not reg_doc:
