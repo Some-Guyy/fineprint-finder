@@ -1,13 +1,7 @@
-import boto3
-import os
 import json
-from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_perplexity import ChatPerplexity
-
-load_dotenv()
-s3 = boto3.client("s3")
-bucket = os.getenv("S3_BUCKET", "fypwhere")
+from services.s3 import s3, bucket
 
 chat_perplexity = ChatPerplexity(temperature=0, model="sonar")
 
@@ -57,7 +51,6 @@ prompt_compare = ChatPromptTemplate.from_messages([
 ])
 
 chain_compare = prompt_compare | chat_perplexity
-
 
 def analyze_pdfs(before_key: str, after_key: str) -> list:
 
