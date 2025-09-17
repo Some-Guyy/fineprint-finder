@@ -23,5 +23,5 @@ yarn-error.log*
 
 # others
 /chroma
-/__pycache__
+**/__pycache__/
 /uploads
