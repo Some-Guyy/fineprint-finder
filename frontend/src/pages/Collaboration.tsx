@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info } from 'lucide-react';
 
 interface Regulation {
@@ -232,6 +232,22 @@ const mockRegulations: Regulation[] = [
       }
     ],
     comments: []
+  },
+  {
+    id: '5',
+    title: 'EU Cookie Directive',
+    lastUpdated: '2025-09-15',
+    status: 'pending',
+    versions: [
+      {
+        id: 'v1',
+        version: '1.0',
+        uploadDate: '2025-09-15',
+        fileName: 'gdpr_amendment_2024.pdf',
+        detailedChanges: []
+      }
+    ],
+    comments: []
   }
 ];
 
@@ -409,7 +425,10 @@ const RegulationManagementPlatform: React.FC = () => {
   const [editedChanges, setEditedChanges] = useState<{[key: string]: DetailedChange}>({});
   const [newTitle, setNewTitle] = useState('');
   const [newFile, setNewFile] = useState<File | null>(null);
-
+  const [isAddingRegulation, setIsAddingRegulation] = useState(false);
+  const [isUpdatingRegulation, setIsUpdatingRegulation] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  
   const selectedReg = regulations.find(r => r.id === selectedRegulation);
   
   // Safely get version data
@@ -458,117 +477,102 @@ const RegulationManagementPlatform: React.FC = () => {
 
   // add brand new regulation
   const handleAddRegulation = async () => {
-  if (!newTitle || !newFile) return;
+    if (!newTitle || !newFile) return;
 
-  try {
-    // Prepare form data to send to backend
-    const formData = new FormData();
-    formData.append("file", newFile);
+    setIsAddingRegulation(true);
 
-    // POST to backend
-    const res = await fetch("http://127.0.0.1:9000/upload-pdf", {
-      method: "POST",
-      body: formData,
-    });
+    try {
+      // Prepare form data to send to backend
+      const formData = new FormData();
+      formData.append("title", newTitle);
+      formData.append("file", newFile);
 
-    if (!res.ok) {
-      throw new Error("Failed to upload PDF");
+      // POST to backend
+      const res = await fetch("http://127.0.0.1:9000/regulations", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to upload PDF");
+      }
+
+      await res.json(); 
+
+      const newReg: Regulation = {
+        id: Date.now().toString(),
+        title: newTitle,
+        lastUpdated: new Date().toISOString().split('T')[0],
+        status: 'pending',
+        versions: [{
+          id: 'v1',
+          version: '1.0',
+          uploadDate: new Date().toISOString().split('T')[0],
+          fileName: newFile.name,
+          detailedChanges: []
+        }],
+        comments: []
+      };
+
+      setRegulations((prev) => [...prev, newReg]);
+      setShowAddModal(false);
+      setNewTitle("");
+      setNewFile(null);
+      alert("Email notification sent to team regarding new regulation upload.");
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading regulation. Please try again.");
+    } finally {
+      setIsAddingRegulation(false);
     }
-
-    const data = await res.json(); 
-    // data contains { filename, content_type, location }
-
-    const today = new Date().toISOString().split("T")[0];
-
-    const newReg: Regulation = {
-      id: Date.now().toString(),
-      title: newTitle,
-      lastUpdated: new Date().toISOString().split('T')[0],
-      status: 'pending',
-      versions: [{
-        id: 'v1',
-        version: '1.0',
-        uploadDate: new Date().toISOString().split('T')[0],
-        fileName: newFile.name,
-        detailedChanges: []
-      }],
-      comments: []
-    };
-
-    setRegulations((prev) => [...prev, newReg]);
-    setShowAddModal(false);
-    setNewTitle("");
-    setNewFile(null);
-    alert("Email notification sent to team regarding new regulation upload.");
-  } catch (err) {
-    console.error(err);
-    alert("Error uploading regulation. Please try again.");
-  }
-};
+  };
 
 // updating regulation with new version of it
   const handleUpdateRegulation = async (file: File | null | undefined) => {
-  if (!file) return;
-
-  try {
-    // const formData = new FormData();
-    // formData.append("file", file);
-
-    // const res = await fetch("http://127.0.0.1:9000/upload-pdf", {
-    //   method: "POST",
-    //   body: formData,
-    // });
-
-    // if (!res.ok) throw new Error("Failed to upload PDF");
-
-    // const data = await res.json();
-
-    // dummy data below for now
-    const newVersion = {
-      
-        id: 'v2',
-        version: '2.0',
-        uploadDate: '2024-09-01',
-        fileName: 'eu_cookie_consent_v2.pdf',
-        detailedChanges: [
-          {
-            id: "change-1",
-            summary: "The updated regulation intensifies enforcement on prior consent and explicitly prohibits pre-ticked boxes and dark patterns in cookie consent mechanisms.",
-            analysis: "This change reflects a stricter regulatory stance emphasizing that consent must be freely given, specific, informed, and unambiguous. It affects all website operators targeting EU users, requiring them to redesign cookie banners to avoid manipulative designs and ensure no cookies are set before consent. This raises compliance costs but enhances user privacy protection.",
-            change: "Explicit prohibition of pre-ticked boxes and dark patterns; requirement that no non-essential cookies be set before active user consent.",
-            before_quote: '"Consent must be obtained before any cookies are set, and pre-ticked boxes or implied consent are not valid." (Page 5, Section 3.2)',
-            after_quote: '"Consent must be freely given, specific, informed, and unambiguous. Pre-ticked boxes or any form of default consent are prohibited. No cookies may be set prior to obtaining explicit consent." (Page 6, Section 3.2)',
-            type: "modification",
-            confidence: 1.00
-          },
-          {
-            id: "change-2",
-            summary: "The new regulation mandates granular consent options for different cookie categories rather than a single blanket acceptance.",
-            analysis: "This change requires websites to provide users with clear choices to accept or reject specific categories such as analytics, advertising, and functionality cookies. It increases transparency and user control but may complicate consent management for businesses. This aligns with GDPR principles and addresses user demand for more nuanced privacy controls.",
-            change: "Introduction of mandatory granular consent controls for cookie categories.",
-            before_quote: '"Consent may be obtained via a single acceptance mechanism covering all cookies used." (Page 7, Section 4.1)',
-            after_quote: '"Users must be provided with granular controls to consent to individual categories of cookies, including analytics, advertising, and functional cookies." (Page 8, Section 4.1)',
-            type: "modification",
-            confidence: 1.00
-          }
-        ]
+    if (!file) {
+      alert("Please select a PDF file.");
+      return;
     }
-    // Update the selected regulation's versions
-    const updatedRegulations = regulations.map((reg) =>
-      reg.id === selectedReg?.id
-        ? { ...reg, versions: [newVersion, ...reg.versions]}
-        : reg
-    );
 
-    setRegulations(updatedRegulations);
+    setIsUpdatingRegulation(true);
 
-    setNewFile(null);
-    alert("Email notification sent to team regarding new regulation version upload.");
-  } catch (err) {
-    console.error(err);
-    alert("Error uploading regulation. Please try again.");
-  }
-};
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Hardcoded regId for EU Cookie
+      const regId = "68c7a5d2fbc9f05cd226410e";
+
+      const res = await fetch(`http://127.0.0.1:9000/regulations/${regId}/versions`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Failed to upload PDF");
+
+      const data = await res.json();
+
+      
+      const updatedRegulations = regulations.map((reg) =>
+        reg.id === selectedReg?.id
+          ? { ...reg, versions: [data.version, ...reg.versions]}
+          : reg
+      );
+
+      setRegulations(updatedRegulations);
+      setNewFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""; 
+      }
+      alert("Email notification sent to team regarding new regulation version upload.");
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading regulation. Please try again.");
+    } finally {
+      setIsUpdatingRegulation(false);
+    }
+  };
 
   // edit function for changes
   const handleEditChange = (changeId: string) => {
@@ -725,19 +729,44 @@ const RegulationManagementPlatform: React.FC = () => {
                     <div className="flex items-center gap-2 mb-2">
                       <Upload size={16} />
                       <span className="font-medium">Update Regulation</span>
+                      {isUpdatingRegulation && (
+                        <span className="text-sm text-blue-600">Uploading...</span>
+                      )}
                     </div>
+                    
+                    {isUpdatingRegulation && (
+                      <div className="mb-3">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">Processing document and analyzing changes...</p>
+                      </div>
+                    )}
+                    
                     <input
+                      ref={fileInputRef}
                       type="file"
                       accept=".pdf"
                       className="w-full text-sm"
+                      disabled={isUpdatingRegulation}
                       onChange={(e) => {
                         const file = e.target.files?.[0] || null;
                         setNewFile(file);
-
-                        // Call upload function immediately, passing file and title
-                        handleUpdateRegulation(file);
                       }}
                     />
+                    
+                    {newFile && (
+                      <div className="mt-3">
+                        <p className="text-sm text-gray-600 mb-2">Selected: {newFile.name}</p>
+                        <button
+                          onClick={() => handleUpdateRegulation(newFile)}
+                          disabled={isUpdatingRegulation}
+                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                        >
+                          {isUpdatingRegulation ? 'Uploading...' : 'Upload New Version'}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Version Comparison */}
@@ -746,6 +775,7 @@ const RegulationManagementPlatform: React.FC = () => {
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold">
                           {selectedReg.versions.length === 1 ? 'Initial Version Analysis' : 'Version Analysis & Comparison'}
+                          <p className="text-xs text-gray-500 mt-1">Previous Version upload date: {currentVersionData.uploadDate}</p>
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
@@ -857,6 +887,16 @@ const RegulationManagementPlatform: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h2 className="text-lg font-semibold mb-4">Add New Regulation</h2>
+            
+            {isAddingRegulation && (
+              <div className="mb-4">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">Uploading regulation and initializing analysis...</p>
+              </div>
+            )}
+            
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Regulation Title</label>
@@ -866,6 +906,7 @@ const RegulationManagementPlatform: React.FC = () => {
                   onChange={(e) => setNewTitle(e.target.value)}
                   className="w-full p-2 border rounded-lg"
                   placeholder="Enter regulation title..."
+                  disabled={isAddingRegulation}
                 />
               </div>
               <div>
@@ -875,19 +916,21 @@ const RegulationManagementPlatform: React.FC = () => {
                   accept=".pdf"
                   onChange={(e) => setNewFile(e.target.files?.[0] || null)}
                   className="w-full p-2 border rounded-lg"
+                  disabled={isAddingRegulation}
                 />
               </div>
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleAddRegulation}
-                  disabled={!newTitle || !newFile}
-                  className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300"
+                  disabled={!newTitle || !newFile || isAddingRegulation}
+                  className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  Add Regulation
+                  {isAddingRegulation ? 'Adding...' : 'Add Regulation'}
                 </button>
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="flex-1 py-2 border rounded hover:bg-gray-50"
+                  disabled={isAddingRegulation}
                 >
                   Cancel
                 </button>
