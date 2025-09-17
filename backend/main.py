@@ -40,8 +40,6 @@ def startup_db_client():
     except Exception as e:
         print("MongoDB connection failed:", e)
 
-app.include_router(utils_router)
-
 @app.get("/regulations")
 async def get_all_regulations():
     try:
@@ -131,3 +129,5 @@ async def add_regulation_version(reg_id: str, file: UploadFile = File(...)):
     )
 
     return {"message": "New version added", "version": new_version}
+
+app.include_router(utils_router)
