@@ -1,13 +1,14 @@
 from fastapi import UploadFile, File, HTTPException, Body
 from fastapi import APIRouter
-from db.mongo import regulation_collection
-from services.s3 import s3_client, s3_bucket
-from llm.chains import analyze_pdfs
 from datetime import datetime
 from pathlib import Path
 from bson import ObjectId
 import logging
 import shutil
+
+from db.mongo import regulation_collection
+from llm.chains import analyze_pdfs
+from services.s3 import s3_client, s3_bucket
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)

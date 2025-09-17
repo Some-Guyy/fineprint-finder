@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from db.mongo import mongo_client
+
 from api.regulations import router as regulations_router
 from api.utils import router as utils_router
+from db.mongo import mongo_client
 
 load_dotenv()
 

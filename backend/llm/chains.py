@@ -1,6 +1,7 @@
 import json
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_perplexity import ChatPerplexity
+
 from services.s3 import s3_client, s3_bucket
 
 chat_perplexity = ChatPerplexity(temperature=0, model="sonar")
