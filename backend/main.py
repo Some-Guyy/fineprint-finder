@@ -4,7 +4,7 @@ import shutil
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
-from pymongo import MongoClient
+from db.mongo import mongo_client, regulation_collection
 from bson import ObjectId
 from dotenv import load_dotenv
 from llm.chains import analyze_pdfs
@@ -25,14 +25,6 @@ app.add_middleware(
     allow_origins=["*"]
 )
 
-# Mongo setup
-db_user = os.getenv("DB_USER")
-db_pass = os.getenv("DB_PASS")
-URI = f"mongodb+srv://{db_user}:{db_pass}@fypwhere.u27axc2.mongodb.net/?retryWrites=true&w=majority&appName=fypwhere"
-client = MongoClient(URI)
-db = client["fypwhere"]
-collection = db["regulations"]
-
 # s3 setup
 s3 = boto3.client("s3")
 bucket = os.getenv("S3_BUCKET", "fypwhere")
@@ -43,7 +35,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 @app.on_event("startup")
 def startup_db_client():
     try:
-        client.admin.command("ping")
+        mongo_client.admin.command("ping")
         print("MongoDB connection successful")
     except Exception as e:
         print("MongoDB connection failed:", e)
@@ -56,7 +48,7 @@ async def health_check():
 async def get_all_regulations():
     try:
         docs = []
-        for doc in collection.find({}):
+        for doc in regulation_collection.find({}):
             doc["_id"] = str(doc["_id"])
             docs.append(doc)
         return docs
@@ -92,7 +84,7 @@ async def create_regulation(title: str = Body(...), file: UploadFile = File(...)
             ],
             "comments": []
         }
-        result = collection.insert_one(doc)
+        result = regulation_collection.insert_one(doc)
         return {"id": str(result.inserted_id), "message": "Regulation created"}
     except Exception as e:
         logging.exception("Failed to create regulation")
@@ -112,7 +104,7 @@ async def add_regulation_version(reg_id: str, file: UploadFile = File(...)):
     s3_key = f"{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}_{file.filename}"
     s3.upload_file(str(temp_path), bucket, s3_key)
 
-    reg_doc = collection.find_one({"_id": ObjectId(reg_id)})
+    reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
     if not reg_doc:
         raise HTTPException(status_code=404, detail="Regulation not found")
 
@@ -132,7 +124,7 @@ async def add_regulation_version(reg_id: str, file: UploadFile = File(...)):
     }
 
     # Update Mongo
-    collection.update_one(
+    regulation_collection.update_one(
         {"_id": ObjectId(reg_id)},
         {
             "$push": {"versions": new_version},
