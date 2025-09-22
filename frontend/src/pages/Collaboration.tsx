@@ -260,14 +260,19 @@ const DetailedChangesView: React.FC<{
   editingChangeId: string | null;
   editedChanges: { [key: string]: DetailedChange };
   setEditedChanges: React.Dispatch<React.SetStateAction<{ [key: string]: DetailedChange }>>;
-  showRelevantOnly?: boolean;
-}> = ({ changes, onEdit, onStatusChange, editingChangeId, editedChanges, setEditedChanges, showRelevantOnly = false }) => {
+  statusFilter?: 'all' | 'relevant' | 'pending' | 'not-relevant';
+}> = ({ changes, onEdit, onStatusChange, editingChangeId, editedChanges, setEditedChanges, statusFilter = 'all' }) => {
   const [expandedChanges, setExpandedChanges] = useState<Set<string>>(new Set());
 
-  // Filter changes based on the showRelevantOnly flag
-  const filteredChanges = showRelevantOnly
-    ? changes.filter(change => change.status === 'relevant')
-    : changes;
+  // Filter changes based on the status filter
+  const filteredChanges = statusFilter === 'all' 
+    ? changes 
+    : changes.filter(change => {
+        if (statusFilter === 'pending') {
+          return !change.status || change.status === 'pending';
+        }
+        return change.status === statusFilter;
+      });
 
   const toggleExpand = (changeId: string) => {
     const newExpanded = new Set(expandedChanges);
@@ -293,9 +298,9 @@ const DetailedChangesView: React.FC<{
     return (
       <div className="text-center py-8 text-gray-500">
         <Info size={48} className="mx-auto mb-4 text-gray-400" />
-        {showRelevantOnly ? (
+        {statusFilter !== 'all' ? (
           <div>
-            <p className="mb-2">No relevant changes found for this version.</p>
+            <p className="mb-2">No {statusFilter === 'pending' ? 'pending' : statusFilter === 'relevant' ? 'relevant' : 'not relevant'} changes found for this version.</p>
             <p className="text-sm">Try switching to "All Changes" to see all detected changes.</p>
           </div>
         ) : (
@@ -307,12 +312,12 @@ const DetailedChangesView: React.FC<{
 
   return (
     <div className="space-y-4">
-      {showRelevantOnly && (
+      {statusFilter !== 'all' && (
         <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
           <div className="flex items-center gap-2">
             <Info size={16} className="text-blue-600" />
             <p className="text-blue-800 text-sm">
-              Showing only relevant changes ({filteredChanges.length} of {changes.length} changes)
+              Showing only {statusFilter === 'pending' ? 'pending review' : statusFilter === 'relevant' ? 'relevant' : 'not relevant'} changes ({filteredChanges.length} of {changes.length} changes)
             </p>
           </div>
         </div>
@@ -489,7 +494,7 @@ const RegulationManagementPlatform: React.FC = () => {
   const [newFile, setNewFile] = useState<File | null>(null);
   const [isAddingRegulation, setIsAddingRegulation] = useState(false);
   const [isUpdatingRegulation, setIsUpdatingRegulation] = useState(false);
-  const [showRelevantOnly, setShowRelevantOnly] = useState(false); // Filter for showing only relevant changes
+  const [statusFilter, setStatusFilter] = useState<'all' | 'relevant' | 'pending' | 'not-relevant'>('all'); // Filter for changes by status
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Fetch regulations on component mount
@@ -1041,12 +1046,14 @@ const RegulationManagementPlatform: React.FC = () => {
                           <div className="flex items-center gap-2 mb-2">
                             <label className="text-sm text-gray-600">Filter changes:</label>
                             <select
-                              value={showRelevantOnly ? 'relevant' : 'all'}
-                              onChange={(e) => setShowRelevantOnly(e.target.value === 'relevant')}
+                              value={statusFilter}
+                              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'relevant' | 'pending' | 'not-relevant')}
                               className="text-sm border rounded px-2 py-1 bg-white"
                             >
                               <option value="all">All Changes</option>
                               <option value="relevant">Relevant Only</option>
+                              <option value="pending">Pending Review</option>
+                              <option value="not-relevant">Not Relevant</option>
                             </select>
                           </div>
                           <DetailedChangesView
@@ -1056,7 +1063,7 @@ const RegulationManagementPlatform: React.FC = () => {
                             editingChangeId={editingChangeId}
                             editedChanges={editedChanges}
                             setEditedChanges={setEditedChanges}
-                            showRelevantOnly={showRelevantOnly}
+                            statusFilter={statusFilter}
                           />
                         </div>
                       )}
