@@ -70,7 +70,10 @@ def analyze_pdfs(before_key: str, after_key: str):
     content = response.content
 
     try:
-        return json.loads(content)
+        change_list = json.loads(content)
+        for change in change_list:
+            change.update({'status': "pending"})
+        return change_list
     except json.JSONDecodeError as e:
 
         return {
