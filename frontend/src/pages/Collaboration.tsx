@@ -13,6 +13,7 @@ interface Regulation {
 interface RegulationVersion {
   id: string;
   version: string;
+  title?: string; // Custom title for the version
   uploadDate: string;
   fileName: string;
   detailedChanges?: DetailedChange[];
@@ -27,6 +28,7 @@ interface DetailedChange {
   after_quote: string;
   type: string;
   confidence: number;
+  status?: 'pending' | 'relevant' | 'not-relevant';
 }
 
 interface Comment {
@@ -251,14 +253,26 @@ interface Comment {
 //   }
 // ];
 
-const DetailedChangesView: React.FC<{ 
-  changes: DetailedChange[]; 
+const DetailedChangesView: React.FC<{
+  changes: DetailedChange[];
   onEdit: (changeId: string) => void;
+  onStatusChange: (changeId: string, status: 'relevant' | 'not-relevant') => void;
   editingChangeId: string | null;
-  editedChanges: {[key: string]: DetailedChange};
-  setEditedChanges: React.Dispatch<React.SetStateAction<{[key: string]: DetailedChange}>>;
-}> = ({ changes, onEdit, editingChangeId, editedChanges, setEditedChanges }) => {
+  editedChanges: { [key: string]: DetailedChange };
+  setEditedChanges: React.Dispatch<React.SetStateAction<{ [key: string]: DetailedChange }>>;
+  statusFilter?: 'all' | 'relevant' | 'pending' | 'not-relevant';
+}> = ({ changes, onEdit, onStatusChange, editingChangeId, editedChanges, setEditedChanges, statusFilter = 'all' }) => {
   const [expandedChanges, setExpandedChanges] = useState<Set<string>>(new Set());
+
+  // Filter changes based on the status filter
+  const filteredChanges = statusFilter === 'all' 
+    ? changes 
+    : changes.filter(change => {
+        if (statusFilter === 'pending') {
+          return !change.status || change.status === 'pending';
+        }
+        return change.status === statusFilter;
+      });
 
   const toggleExpand = (changeId: string) => {
     const newExpanded = new Set(expandedChanges);
@@ -280,21 +294,40 @@ const DetailedChangesView: React.FC<{
     }));
   };
 
-  if (changes.length === 0) {
+  if (filteredChanges.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
         <Info size={48} className="mx-auto mb-4 text-gray-400" />
-        <p>No detailed changes available for this version.</p>
+        {statusFilter !== 'all' ? (
+          <div>
+            <p className="mb-2">No {statusFilter === 'pending' ? 'pending' : statusFilter === 'relevant' ? 'relevant' : 'not relevant'} changes found for this version.</p>
+            <p className="text-sm">Try switching to "All Changes" to see all detected changes.</p>
+          </div>
+        ) : (
+          <p>No detailed changes available for this version.</p>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {changes.map((change, index) => {
+      {statusFilter !== 'all' && (
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
+          <div className="flex items-center gap-2">
+            <Info size={16} className="text-blue-600" />
+            <p className="text-blue-800 text-sm">
+              Showing only {statusFilter === 'pending' ? 'pending review' : statusFilter === 'relevant' ? 'relevant' : 'not relevant'} changes ({filteredChanges.length} of {changes.length} changes)
+            </p>
+          </div>
+        </div>
+      )}
+      {filteredChanges.map((change, filteredIndex) => {
         const isExpanded = expandedChanges.has(change.id);
         const isEditing = editingChangeId === change.id;
         const editedChange = editedChanges[change.id] || change;
+        // Calculate the original index for display
+        const originalIndex = changes.findIndex(c => c.id === change.id);
 
         return (
           <div key={change.id} className="border rounded-lg overflow-hidden">
@@ -307,21 +340,31 @@ const DetailedChangesView: React.FC<{
                       className="flex items-center gap-1 hover:bg-gray-200 px-2 py-1 rounded"
                     >
                       {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                      <span className="font-medium">Change {index + 1}</span>
+                      <span className="font-medium">Change {originalIndex + 1}</span>
                     </button>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      change.type === 'modification' ? 'bg-blue-100 text-blue-800' :
+                    <span className={`px-2 py-1 text-xs rounded-full ${change.type === 'modification' ? 'bg-blue-100 text-blue-800' :
                       change.type === 'procedural change' ? 'bg-green-100 text-green-800' :
-                      change.type === 'penalty change' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                        change.type === 'penalty change' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                      }`}>
                       {change.type}
+
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`px-2 py-1 text-xs rounded-full ${change.status === 'relevant' ? 'bg-green-100 text-green-800' :
+                      change.status === 'not-relevant' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                      {change.status === 'relevant' ? 'Relevant' :
+                        change.status === 'not-relevant' ? 'Not Relevant' :
+                          'Pending Review'}
                     </span>
                     <span className="text-xs text-gray-500">
                       Confidence: {(change.confidence * 100).toFixed(0)}%
                     </span>
                   </div>
-                  
+
                   {isEditing ? (
                     <textarea
                       value={editedChange.summary}
@@ -333,14 +376,34 @@ const DetailedChangesView: React.FC<{
                     <p className="text-gray-700 text-sm">{change.summary}</p>
                   )}
                 </div>
-                
-                <button
-                  onClick={() => onEdit(change.id)}
-                  className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50 ml-4"
-                >
-                  <Edit3 size={14} />
-                  {isEditing ? 'Save' : 'Edit'}
-                </button>
+
+                <div className="flex items-center gap-2 ml-4">
+                  {(change.status === 'pending' || change.status === undefined || !change.status) && (
+                    <>
+                      <button
+                        onClick={() => onStatusChange(change.id, 'relevant')}
+                        className="flex items-center gap-1 px-2 py-1 text-xs border border-green-300 rounded hover:bg-green-50 text-green-700"
+                      >
+                        <CheckCircle size={12} />
+                        Mark Relevant
+                      </button>
+                      <button
+                        onClick={() => onStatusChange(change.id, 'not-relevant')}
+                        className="flex items-center gap-1 px-2 py-1 text-xs border border-red-300 rounded hover:bg-red-50 text-red-700"
+                      >
+                        <AlertCircle size={12} />
+                        Not Relevant
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={() => onEdit(change.id)}
+                    className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                  >
+                    <Edit3 size={14} />
+                    {isEditing ? 'Save' : 'Edit'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -390,7 +453,7 @@ const DetailedChangesView: React.FC<{
                       </div>
                     )}
                   </div>
-                  
+
                   <div>
                     <h5 className="font-medium mb-2 text-green-700">After (Updated Text)</h5>
                     {isEditing ? (
@@ -424,29 +487,32 @@ const RegulationManagementPlatform: React.FC = () => {
   const [selectedVersion, setSelectedVersion] = useState<string>('latest');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingChangeId, setEditingChangeId] = useState<string | null>(null);
-  const [editedChanges, setEditedChanges] = useState<{[key: string]: DetailedChange}>({});
+  const [editedChanges, setEditedChanges] = useState<{ [key: string]: DetailedChange }>({});
   const [newTitle, setNewTitle] = useState('');
+  const [newVersionTitle, setNewVersionTitle] = useState(''); // For add regulation version title
+  const [updateVersionTitle, setUpdateVersionTitle] = useState(''); // For update regulation version title
   const [newFile, setNewFile] = useState<File | null>(null);
   const [isAddingRegulation, setIsAddingRegulation] = useState(false);
   const [isUpdatingRegulation, setIsUpdatingRegulation] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'relevant' | 'pending' | 'not-relevant'>('all'); // Filter for changes by status
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  
+
   // Fetch regulations on component mount
   useEffect(() => {
     const fetchRegulations = async () => {
       try {
         setLoading(true);
-        
+
         const response = await fetch('http://127.0.0.1:9000/regulations');
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch regulations: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
 
         // console.log(data)
-        
+
         // Sort versions within each regulation to ensure latest version is first
         const sortedData = data.map((regulation: Regulation) => ({
           ...regulation,
@@ -454,16 +520,16 @@ const RegulationManagementPlatform: React.FC = () => {
             // First try to sort by version number (assuming semantic versioning like "2.0", "1.0")
             const versionA = parseFloat(a.version);
             const versionB = parseFloat(b.version);
-            
+
             if (!isNaN(versionA) && !isNaN(versionB)) {
               return versionB - versionA; // Descending order (latest first)
             }
-            
+
             // Fallback to sorting by upload date if version parsing fails
             return new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime();
           })
         }));
-        
+
         setRegulations(sortedData);
         setError(null);
       } catch (err) {
@@ -497,8 +563,8 @@ const RegulationManagementPlatform: React.FC = () => {
           <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Regulations</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Retry
@@ -508,12 +574,12 @@ const RegulationManagementPlatform: React.FC = () => {
     );
   }
   const selectedReg = regulations.find(r => r._id === selectedRegulation);
-  
+
   // Safely get version data
   let currentVersionData: RegulationVersion | null = null;
   let previousVersionData: RegulationVersion | null = null;
   let isOldestVersion = false;
-  
+
   if (selectedReg) {
     if (selectedVersion === 'latest') {
       currentVersionData = selectedReg.versions[0];
@@ -536,8 +602,8 @@ const RegulationManagementPlatform: React.FC = () => {
   // console.log(currentVersionData)
   // Change from pending to verified or vice versa
   const handleStatusChange = (regId: string) => {
-    setRegulations(prev => prev.map(reg => 
-      reg._id === regId 
+    setRegulations(prev => prev.map(reg =>
+      reg._id === regId
         ? { ...reg, status: reg.status === 'pending' ? 'validated' : 'pending' }
         : reg
     ));
@@ -564,6 +630,9 @@ const RegulationManagementPlatform: React.FC = () => {
       const formData = new FormData();
       formData.append("title", newTitle);
       formData.append("file", newFile);
+      if (newVersionTitle.trim()) {
+        formData.append("versionTitle", newVersionTitle.trim());
+      }
 
       // POST to backend
       const res = await fetch("http://127.0.0.1:9000/regulations", {
@@ -575,7 +644,7 @@ const RegulationManagementPlatform: React.FC = () => {
         throw new Error("Failed to upload PDF");
       }
 
-      await res.json(); 
+      await res.json();
 
       const newReg: Regulation = {
         _id: Date.now().toString(),
@@ -585,9 +654,40 @@ const RegulationManagementPlatform: React.FC = () => {
         versions: [{
           id: 'v1',
           version: '1.0',
+          title: newVersionTitle.trim() || undefined,
           uploadDate: new Date().toISOString().split('T')[0],
           fileName: newFile.name,
-          detailedChanges: []
+          detailedChanges: [{
+            id: "test-change-1",
+            summary: "Test change to demonstrate status functionality",
+            analysis: "This is a test change to show how the status buttons work.",
+            change: "Sample change for testing status updates",
+            before_quote: "Original text here",
+            after_quote: "Updated text here",
+            type: "modification",
+            confidence: 0.95,
+            status: 'pending'
+          }, {
+            id: "test-change-2",
+            summary: "Another test change marked as relevant",
+            analysis: "This change has been marked as relevant for testing the filter.",
+            change: "Sample relevant change for filter testing",
+            before_quote: "Previous regulation text",
+            after_quote: "Updated regulation text",
+            type: "procedural change",
+            confidence: 0.88,
+            status: 'relevant'
+          }, {
+            id: "test-change-3",
+            summary: "Test change marked as not relevant",
+            analysis: "This change has been marked as not relevant for testing the filter.",
+            change: "Sample non-relevant change for filter testing",
+            before_quote: "Old text example",
+            after_quote: "New text example",
+            type: "penalty change",
+            confidence: 0.75,
+            status: 'not-relevant'
+          }]
         }],
         comments: []
       };
@@ -595,6 +695,7 @@ const RegulationManagementPlatform: React.FC = () => {
       setRegulations((prev) => [...prev, newReg]);
       setShowAddModal(false);
       setNewTitle("");
+      setNewVersionTitle("");
       setNewFile(null);
       alert("Email notification sent to team regarding new regulation upload.");
     } catch (err) {
@@ -617,6 +718,9 @@ const RegulationManagementPlatform: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (updateVersionTitle.trim()) {
+        formData.append("versionTitle", updateVersionTitle.trim());
+      }
 
       const regId = selectedReg?._id;
 
@@ -629,18 +733,19 @@ const RegulationManagementPlatform: React.FC = () => {
 
       const data = await res.json();
 
-      
+
       const updatedRegulations = regulations.map((reg) =>
         reg._id === selectedReg?._id
-          ? { ...reg, versions: [data.version, ...reg.versions]}
+          ? { ...reg, versions: [data.version, ...reg.versions] }
           : reg
       );
 
       setRegulations(updatedRegulations);
       setNewFile(null);
+      setUpdateVersionTitle("");
 
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""; 
+        fileInputRef.current.value = "";
       }
       alert("Email notification sent to team regarding new regulation version upload.");
     } catch (err) {
@@ -657,21 +762,21 @@ const RegulationManagementPlatform: React.FC = () => {
       // Save the edited change
       const editedChange = editedChanges[changeId];
       if (editedChange && selectedReg && currentVersionData) {
-        setRegulations(prev => prev.map(reg => 
-          reg._id === selectedReg._id 
+        setRegulations(prev => prev.map(reg =>
+          reg._id === selectedReg._id
             ? {
-                ...reg,
-                versions: reg.versions.map(v => 
-                  v.id === currentVersionData!.id 
-                    ? { 
-                        ...v, 
-                        detailedChanges: v.detailedChanges?.map(dc => 
-                          dc.id === changeId ? editedChange : dc
-                        ) || []
-                      }
-                    : v
-                )
-              }
+              ...reg,
+              versions: reg.versions.map(v =>
+                v.id === currentVersionData!.id
+                  ? {
+                    ...v,
+                    detailedChanges: v.detailedChanges?.map(dc =>
+                      dc.id === changeId ? editedChange : dc
+                    ) || []
+                  }
+                  : v
+              )
+            }
             : reg
         ));
       }
@@ -688,6 +793,29 @@ const RegulationManagementPlatform: React.FC = () => {
         setEditedChanges(prev => ({ ...prev, [changeId]: { ...change } }));
         setEditingChangeId(changeId);
       }
+    }
+  };
+
+  // Handle status change for flagged changes
+  const handleChangeStatusUpdate = (changeId: string, status: 'relevant' | 'not-relevant') => {
+    if (selectedReg && currentVersionData) {
+      setRegulations(prev => prev.map(reg =>
+        reg._id === selectedReg._id
+          ? {
+            ...reg,
+            versions: reg.versions.map(v =>
+              v.id === currentVersionData!.id
+                ? {
+                  ...v,
+                  detailedChanges: v.detailedChanges?.map(dc =>
+                    dc.id === changeId ? { ...dc, status } : dc
+                  ) || []
+                }
+                : v
+            )
+          }
+          : reg
+      ));
     }
   };
 
@@ -734,9 +862,8 @@ const RegulationManagementPlatform: React.FC = () => {
                 <div
                   key={regulation._id}
                   onClick={() => setSelectedRegulation(regulation._id)}
-                  className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedRegulation === regulation._id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
-                  }`}
+                  className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${selectedRegulation === regulation._id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -769,11 +896,10 @@ const RegulationManagementPlatform: React.FC = () => {
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">{selectedReg.title}</h2>
                       <div className="flex items-center gap-4 mt-2">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          selectedReg.status === 'validated' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span className={`px-2 py-1 text-xs rounded-full ${selectedReg.status === 'validated'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                          }`}>
                           {selectedReg.status.charAt(0).toUpperCase() + selectedReg.status.slice(1)}
                         </span>
                         <div className="flex items-center gap-2">
@@ -786,11 +912,12 @@ const RegulationManagementPlatform: React.FC = () => {
                             <option value="latest">Latest vs Previous</option>
                             {selectedReg.versions.map((version, index) => (
                               <option key={version.id} value={version.id}>
-                                Version {version.version} {index === 0 ? '(Latest)' : ''}
+                                Version {version.version} {version.title ? `- ${version.title}` : ''} {index === 0 ? '(Latest)' : ''}
                               </option>
                             ))}
                           </select>
                         </div>
+
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -823,28 +950,46 @@ const RegulationManagementPlatform: React.FC = () => {
                         <span className="text-sm text-blue-600">Uploading...</span>
                       )}
                     </div>
-                    
+
                     {isUpdatingRegulation && (
                       <div className="mb-3">
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                          <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">Processing document and analyzing changes...</p>
                       </div>
                     )}
-                    
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".pdf"
-                      className="w-full text-sm"
-                      disabled={isUpdatingRegulation}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        setNewFile(file);
-                      }}
-                    />
-                    
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Version Title (Optional)</label>
+                        <input
+                          type="text"
+                          value={updateVersionTitle}
+                          onChange={(e) => setUpdateVersionTitle(e.target.value)}
+                          className="w-full p-2 border rounded text-sm"
+                          placeholder="e.g., 'September 2024 Amendment', 'Post-Brexit Update'..."
+                          disabled={isUpdatingRegulation}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Give this version a descriptive title to help identify it later</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Select PDF File</label>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf"
+                          className="w-full text-sm"
+                          disabled={isUpdatingRegulation}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setNewFile(file);
+                          }}
+                        />
+                      </div>
+                    </div>
+
                     {newFile && (
                       <div className="mt-3">
                         <p className="text-sm text-gray-600 mb-2">Selected: {newFile.name}</p>
@@ -869,13 +1014,13 @@ const RegulationManagementPlatform: React.FC = () => {
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                            Current: v{currentVersionData.version}
+                            Current: v{currentVersionData.version}{currentVersionData.title ? ` - ${currentVersionData.title}` : ''}
                           </span>
                           {previousVersionData && (
                             <>
                               <span>vs</span>
                               <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded">
-                                Previous: v{previousVersionData.version}
+                                Previous: v{previousVersionData.version}{previousVersionData.title ? ` - ${previousVersionData.title}` : ''}
                               </span>
                             </>
                           )}
@@ -898,12 +1043,27 @@ const RegulationManagementPlatform: React.FC = () => {
                               </span>
                             )}
                           </h4>
-                          <DetailedChangesView 
+                          <div className="flex items-center gap-2 mb-2">
+                            <label className="text-sm text-gray-600">Filter changes:</label>
+                            <select
+                              value={statusFilter}
+                              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'relevant' | 'pending' | 'not-relevant')}
+                              className="text-sm border rounded px-2 py-1 bg-white"
+                            >
+                              <option value="all">All Changes</option>
+                              <option value="relevant">Relevant Only</option>
+                              <option value="pending">Pending Review</option>
+                              <option value="not-relevant">Not Relevant</option>
+                            </select>
+                          </div>
+                          <DetailedChangesView
                             changes={currentVersionData.detailedChanges}
                             onEdit={handleEditChange}
+                            onStatusChange={handleChangeStatusUpdate}
                             editingChangeId={editingChangeId}
                             editedChanges={editedChanges}
                             setEditedChanges={setEditedChanges}
+                            statusFilter={statusFilter}
                           />
                         </div>
                       )}
@@ -977,16 +1137,16 @@ const RegulationManagementPlatform: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h2 className="text-lg font-semibold mb-4">Add New Regulation</h2>
-            
+
             {isAddingRegulation && (
               <div className="mb-4">
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '100%'}}></div>
+                  <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
                 </div>
                 <p className="text-sm text-gray-600 mt-2">Uploading regulation and initializing analysis...</p>
               </div>
             )}
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Regulation Title</label>
@@ -998,6 +1158,18 @@ const RegulationManagementPlatform: React.FC = () => {
                   placeholder="Enter regulation title..."
                   disabled={isAddingRegulation}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Version Title (Optional)</label>
+                <input
+                  type="text"
+                  value={newVersionTitle}
+                  onChange={(e) => setNewVersionTitle(e.target.value)}
+                  className="w-full p-2 border rounded-lg"
+                  placeholder="e.g., 'Initial Release', 'Q3 2024 Update'..."
+                  disabled={isAddingRegulation}
+                />
+                <p className="text-xs text-gray-500 mt-1">Give this version a descriptive title to help identify it later</p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Upload PDF</label>
@@ -1018,7 +1190,12 @@ const RegulationManagementPlatform: React.FC = () => {
                   {isAddingRegulation ? 'Adding...' : 'Add Regulation'}
                 </button>
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setNewTitle("");
+                    setNewVersionTitle("");
+                    setNewFile(null);
+                  }}
                   className="flex-1 py-2 border rounded hover:bg-gray-50"
                   disabled={isAddingRegulation}
                 >

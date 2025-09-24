@@ -8,6 +8,7 @@ import { ChangeDetectionResults } from './pages/archive/ChangeDetectionResults';
 import { LLMAnalysisPage } from './pages/archive/LLMAnalysisPage';
 import { AlertsNotificationSettings } from './pages/archive/AlertsNotificationSettings';
 import RegulationManagementPlatform from './pages/Collaboration';
+import RelevantChangesPage from './pages/OverviewChanges';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<RegulationManagementPlatform />} />
+            <Route path="/changes-overview" element={<RelevantChangesPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/scraping" element={<ScrapingManagement />} />
             <Route path="/upload" element={<UploadPage />} />
