@@ -651,44 +651,7 @@ const RegulationManagementPlatform: React.FC = () => {
         title: newTitle,
         lastUpdated: new Date().toISOString().split('T')[0],
         status: 'pending',
-        versions: [{
-          id: 'v1',
-          version: '1.0',
-          title: newVersionTitle.trim() || undefined,
-          uploadDate: new Date().toISOString().split('T')[0],
-          fileName: newFile.name,
-          detailedChanges: [{
-            id: "test-change-1",
-            summary: "Test change to demonstrate status functionality",
-            analysis: "This is a test change to show how the status buttons work.",
-            change: "Sample change for testing status updates",
-            before_quote: "Original text here",
-            after_quote: "Updated text here",
-            type: "modification",
-            confidence: 0.95,
-            status: 'pending'
-          }, {
-            id: "test-change-2",
-            summary: "Another test change marked as relevant",
-            analysis: "This change has been marked as relevant for testing the filter.",
-            change: "Sample relevant change for filter testing",
-            before_quote: "Previous regulation text",
-            after_quote: "Updated regulation text",
-            type: "procedural change",
-            confidence: 0.88,
-            status: 'relevant'
-          }, {
-            id: "test-change-3",
-            summary: "Test change marked as not relevant",
-            analysis: "This change has been marked as not relevant for testing the filter.",
-            change: "Sample non-relevant change for filter testing",
-            before_quote: "Old text example",
-            after_quote: "New text example",
-            type: "penalty change",
-            confidence: 0.75,
-            status: 'not-relevant'
-          }]
-        }],
+        versions: [],
         comments: []
       };
 
