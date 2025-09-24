@@ -8,6 +8,7 @@ import shutil
 
 from db.mongo import regulation_collection
 from llm.chains import analyze_pdfs
+from schemas.regulations import ChangeStatusUpdate
 from services.s3 import s3_client, s3_bucket
 
 UPLOAD_DIR = Path("uploads")
@@ -113,3 +114,27 @@ async def add_regulation_version(reg_id: str, file: UploadFile = File(...)):
     )
 
     return {"message": "New version added", "version": new_version}
+
+# Change status of a change
+@router.put("/regulations/{reg_id}/versions/{version_index}/{change_index}")
+async def update_change_status(reg_id: str, version_index: int, change_index: int, body: ChangeStatusUpdate):
+    reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
+    if not reg_doc:
+        raise HTTPException(status_code=404, detail="Regulation not found")
+    
+    try:
+        _ = reg_doc['versions'][version_index]['detailedChanges'][change_index]
+    except IndexError:
+        raise HTTPException(status_code=400, detail=f"Version index of {version_index} or change index of {change_index} is out of range.")
+    
+    new_status = body.new_status
+    regulation_collection.update_one(
+        {"_id": ObjectId(reg_id)},
+        {
+            "$set": {
+                f"versions.{version_index}.detailedChanges.{change_index}.status": new_status
+            }
+        }
+    )
+
+    return {"message": "Change status updated", "status": new_status}
