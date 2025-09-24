@@ -644,10 +644,10 @@ const RegulationManagementPlatform: React.FC = () => {
         throw new Error("Failed to upload PDF");
       }
 
-      await res.json();
+      const resData = await res.json();
 
       const newReg: Regulation = {
-        _id: Date.now().toString(),
+        _id: resData.id,
         title: newTitle,
         lastUpdated: new Date().toISOString().split('T')[0],
         status: 'pending',
