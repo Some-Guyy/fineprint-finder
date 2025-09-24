@@ -6,12 +6,14 @@ import {
   Search, 
   Brain, 
   Bell,
-  Activity
+  Activity,
+  CheckSquare
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Changes Overview', href: '/changes-overview', icon: CheckSquare },
   // { name: 'Dashboard (old)', href: '/dashboard', icon: Home },
   // { name: 'Scraping Management', href: '/scraping', icon: Search },
   // { name: 'Upload Documents', href: '/upload', icon: Upload },
