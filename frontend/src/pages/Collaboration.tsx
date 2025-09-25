@@ -598,7 +598,7 @@ const RegulationManagementPlatform: React.FC = () => {
     }
     isOldestVersion = !previousVersionData;
   }
-
+  
   // console.log(selectedReg)
   // console.log(currentVersionData)
   // Change from pending to verified or vice versa
@@ -875,7 +875,7 @@ const RegulationManagementPlatform: React.FC = () => {
                             <option value="latest">Latest vs Previous</option>
                             {selectedReg.versions.map((version, index) => (
                               <option key={version.id} value={version.id}>
-                                Version {version.version} {version.title ? `- ${version.title}` : ''} {index === 0 ? '(Latest)' : ''}
+                                {version.version} {version.title ? `- ${version.title}` : ''} {index === 0 ? '(Latest)' : ''}
                               </option>
                             ))}
                           </select>
