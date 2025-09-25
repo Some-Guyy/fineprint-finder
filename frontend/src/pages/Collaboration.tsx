@@ -4,6 +4,7 @@ import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, 
 interface Regulation {
   _id: string;
   title: string;
+  version: string;
   lastUpdated: string;
   status: 'pending' | 'validated';
   versions: RegulationVersion[];
@@ -621,7 +622,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
   // add brand new regulation
   const handleAddRegulation = async () => {
-    if (!newTitle || !newFile) return;
+    if (!newTitle || !newFile || !newVersionTitle) return;
 
     setIsAddingRegulation(true);
 
@@ -630,9 +631,7 @@ const RegulationManagementPlatform: React.FC = () => {
       const formData = new FormData();
       formData.append("title", newTitle);
       formData.append("file", newFile);
-      if (newVersionTitle.trim()) {
-        formData.append("versionTitle", newVersionTitle.trim());
-      }
+      formData.append("version", newVersionTitle.trim());
 
       // POST to backend
       const res = await fetch("http://127.0.0.1:9000/regulations", {
@@ -649,6 +648,7 @@ const RegulationManagementPlatform: React.FC = () => {
       const newReg: Regulation = {
         _id: resData.id,
         title: newTitle,
+        version: newVersionTitle,
         lastUpdated: new Date().toISOString().split('T')[0],
         status: 'pending',
         versions: [],
@@ -682,7 +682,7 @@ const RegulationManagementPlatform: React.FC = () => {
       const formData = new FormData();
       formData.append("file", file);
       if (updateVersionTitle.trim()) {
-        formData.append("versionTitle", updateVersionTitle.trim());
+        formData.append("version", updateVersionTitle.trim());
       }
 
       const regId = selectedReg?._id;
@@ -925,7 +925,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Version Title (Optional)</label>
+                        <label className="block text-sm font-medium mb-1">Version Title</label>
                         <input
                           type="text"
                           value={updateVersionTitle}
@@ -958,7 +958,7 @@ const RegulationManagementPlatform: React.FC = () => {
                         <p className="text-sm text-gray-600 mb-2">Selected: {newFile.name}</p>
                         <button
                           onClick={() => handleUpdateRegulation(newFile)}
-                          disabled={isUpdatingRegulation}
+                          disabled={!updateVersionTitle || !newFile || isUpdatingRegulation}
                           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                         >
                           {isUpdatingRegulation ? 'Uploading...' : 'Upload New Version'}
@@ -977,13 +977,13 @@ const RegulationManagementPlatform: React.FC = () => {
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                            Current: v{currentVersionData.version}{currentVersionData.title ? ` - ${currentVersionData.title}` : ''}
+                            Current: {currentVersionData.version}{currentVersionData.title ? ` - ${currentVersionData.title}` : ''}
                           </span>
                           {previousVersionData && (
                             <>
                               <span>vs</span>
                               <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded">
-                                Previous: v{previousVersionData.version}{previousVersionData.title ? ` - ${previousVersionData.title}` : ''}
+                                Previous: {previousVersionData.version}{previousVersionData.title ? ` - ${previousVersionData.title}` : ''}
                               </span>
                             </>
                           )}
@@ -1002,7 +1002,7 @@ const RegulationManagementPlatform: React.FC = () => {
                             <span>Detailed Changes Analysis</span>
                             {previousVersionData && (
                               <span className="text-sm text-gray-500">
-                                (v{previousVersionData.version} → v{currentVersionData.version})
+                                ({previousVersionData.version} → {currentVersionData.version})
                               </span>
                             )}
                           </h4>
@@ -1123,7 +1123,7 @@ const RegulationManagementPlatform: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Version Title (Optional)</label>
+                <label className="block text-sm font-medium mb-2">Version Title</label>
                 <input
                   type="text"
                   value={newVersionTitle}
@@ -1147,7 +1147,7 @@ const RegulationManagementPlatform: React.FC = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   onClick={handleAddRegulation}
-                  disabled={!newTitle || !newFile || isAddingRegulation}
+                  disabled={!newTitle || !newFile || !newVersionTitle || isAddingRegulation}
                   className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {isAddingRegulation ? 'Adding...' : 'Add Regulation'}
