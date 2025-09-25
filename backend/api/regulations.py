@@ -29,7 +29,7 @@ async def get_all_regulations():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/regulations")
-async def create_regulation(title: str = Body(...), file: UploadFile = File(...)):
+async def create_regulation(title: str = Body(...), version: str = Body(...), file: UploadFile = File(...)):
     try:
         if file.content_type != "application/pdf":
             raise HTTPException(status_code=400, detail="Only PDF files are allowed")
@@ -47,7 +47,7 @@ async def create_regulation(title: str = Body(...), file: UploadFile = File(...)
             "versions": [
                 {
                     "id": "v1",
-                    "version": "1.0",
+                    "version": version,
                     "uploadDate": datetime.now().strftime("%Y-%m-%d"),
                     "s3Key": s3_key,
                     "detailedChanges": [],
@@ -65,7 +65,7 @@ async def create_regulation(title: str = Body(...), file: UploadFile = File(...)
 
 # Upload another PDF to update the regulation
 @router.post("/regulations/{reg_id}/versions")
-async def add_regulation_version(reg_id: str, file: UploadFile = File(...)):
+async def add_regulation_version(reg_id: str, version: str = Body(...), file: UploadFile = File(...)):
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
@@ -97,7 +97,7 @@ async def add_regulation_version(reg_id: str, file: UploadFile = File(...)):
 
     new_version = {
         "id": f"v{len(reg_doc['versions']) + 1}",
-        "version": f"{len(reg_doc['versions']) + 1}.0",
+        "version": version,
         "uploadDate": upload_date,
         "fileName": file.filename,
         "s3Key": s3_key,
