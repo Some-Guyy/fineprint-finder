@@ -599,9 +599,10 @@ const RegulationManagementPlatform: React.FC = () => {
     isOldestVersion = !previousVersionData;
   }
   
-  // console.log(selectedReg)
+  console.log(selectedReg)
   // console.log(currentVersionData)
-  // Change from pending to verified or vice versa
+
+  // Change from pending to verified or vice versa for whole
   const handleStatusChange = (regId: string) => {
     setRegulations(prev => prev.map(reg =>
       reg._id === regId
@@ -760,25 +761,62 @@ const RegulationManagementPlatform: React.FC = () => {
   };
 
   // Handle status change for flagged changes
-  const handleChangeStatusUpdate = (changeId: string, status: 'relevant' | 'not-relevant') => {
-    if (selectedReg && currentVersionData) {
-      setRegulations(prev => prev.map(reg =>
-        reg._id === selectedReg._id
-          ? {
-            ...reg,
-            versions: reg.versions.map(v =>
-              v.id === currentVersionData!.id
-                ? {
+  const handleChangeStatusUpdate = async (changeId: string, status: 'relevant' | 'not-relevant') => {
+    if (!selectedReg || !currentVersionData) return;
+
+    try {
+      // Call backend API
+      const versionIndex = selectedReg.versions.findIndex(v => v.id === currentVersionData!.id);
+      const changeIndex = currentVersionData.detailedChanges?.findIndex(dc => dc.id === changeId);
+
+      if (versionIndex === -1 || changeIndex === undefined || changeIndex === -1) {
+        console.error("Version index or change index not found");
+        return;
+      }
+      console.log(selectedReg)
+      console.log(selectedReg._id, versionIndex, changeIndex)
+      const response = await fetch(
+        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${versionIndex}/${changeIndex}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ new_status: status }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Failed to update status:", errorData.detail || response.statusText);
+        return;
+      }
+
+      // Update local state after successful backend update
+      setRegulations(prev =>
+  prev.map(reg =>
+    reg._id === selectedReg._id
+      ? {
+          ...reg,
+          versions: reg.versions.map(v =>
+            v.id === currentVersionData?.id // use optional chaining
+              ? {
                   ...v,
                   detailedChanges: v.detailedChanges?.map(dc =>
                     dc.id === changeId ? { ...dc, status } : dc
-                  ) || []
+                  ) || [],
                 }
-                : v
-            )
-          }
-          : reg
-      ));
+              : v
+          ),
+        }
+      : reg
+  )
+);
+
+
+
+    } catch (error) {
+      console.error("Error updating change status:", error);
     }
   };
 
