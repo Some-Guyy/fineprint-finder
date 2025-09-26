@@ -599,7 +599,7 @@ const RegulationManagementPlatform: React.FC = () => {
     isOldestVersion = !previousVersionData;
   }
   
-  console.log(selectedReg)
+  // console.log(selectedReg)
   // console.log(currentVersionData)
 
   // Change from pending to verified or vice versa for whole
@@ -773,10 +773,12 @@ const RegulationManagementPlatform: React.FC = () => {
         console.error("Version index or change index not found");
         return;
       }
-      console.log(selectedReg)
-      console.log(selectedReg._id, versionIndex, changeIndex)
+      // console.log(selectedReg)
+      // console.log(selectedReg._id, versionIndex, changeIndex)
+      // console.log("Frontend order:", selectedReg.versions.map(v => v.id));
+
       const response = await fetch(
-        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${versionIndex}/${changeIndex}`,
+        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}`,
         {
           method: 'PUT',
           headers: {

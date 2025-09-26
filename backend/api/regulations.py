@@ -116,25 +116,39 @@ async def add_regulation_version(reg_id: str, version: str = Body(...), file: Up
     return {"message": "New version added", "version": new_version}
 
 # Change status of a change
-@router.put("/regulations/{reg_id}/versions/{version_index}/{change_index}")
-async def update_change_status(reg_id: str, version_index: int, change_index: int, body: ChangeStatusUpdate):
+@router.put("/regulations/{reg_id}/versions/{version_id}/changes/{change_id}")
+async def update_change_status(
+    reg_id: str,
+    version_id: str,
+    change_id: str,
+    body: ChangeStatusUpdate
+):
     reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
+
     if not reg_doc:
         raise HTTPException(status_code=404, detail="Regulation not found")
     
-    try:
-        _ = reg_doc['versions'][version_index]['detailedChanges'][change_index]
-    except IndexError:
-        raise HTTPException(status_code=400, detail=f"Version index of {version_index} or change index of {change_index} is out of range.")
-    
+     # Find version by id
+    version = next((v for v in reg_doc['versions'] if v['id'] == version_id), None)
+    if not version:
+        raise HTTPException(status_code=404, detail=f"Version {version_id} not found")
+
+    # Find change by id
+    change = next((c for c in version.get('detailedChanges', []) if c['id'] == change_id), None)
+    if not change:
+        raise HTTPException(status_code=404, detail=f"Change {change_id} not found")
+
     new_status = body.new_status
+
+    # Update using array filters
     regulation_collection.update_one(
         {"_id": ObjectId(reg_id)},
         {
             "$set": {
-                f"versions.{version_index}.detailedChanges.{change_index}.status": new_status
+                "versions.$[v].detailedChanges.$[c].status": new_status
             }
-        }
+        },
+        array_filters=[{"v.id": version_id}, {"c.id": change_id}]
     )
 
     return {"message": "Change status updated", "status": new_status}
