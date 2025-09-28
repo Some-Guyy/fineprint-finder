@@ -92,7 +92,7 @@ async def add_regulation_version(reg_id: str, version: str = Body(...), file: Up
             }
     )
 
-    upload_date = datetime.now().strftime('%Y-%m-%d')
+    upload_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     new_version = {
         "id": f"v{len(reg_doc['versions']) + 1}",

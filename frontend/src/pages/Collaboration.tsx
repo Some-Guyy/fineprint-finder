@@ -722,10 +722,14 @@ const RegulationManagementPlatform: React.FC = () => {
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Failed to upload PDF");
-
       const data = await res.json();
-
+      if (!res.ok) {
+          const errorMessage = 
+              data.detail && typeof data.detail === 'object' && 'details' in data.detail
+                  ? data.detail.details
+                  : data.detail;
+          throw new Error(errorMessage);
+      }
 
       const updatedRegulations = regulations.map((reg) =>
         reg._id === selectedReg?._id
@@ -743,7 +747,7 @@ const RegulationManagementPlatform: React.FC = () => {
       alert("Email notification sent to team regarding new regulation version upload.");
     } catch (err) {
       console.error(err);
-      alert("Error uploading regulation. Please try again.");
+      alert(err);
     } finally {
       setIsUpdatingRegulation(false);
     }
@@ -840,34 +844,33 @@ const RegulationManagementPlatform: React.FC = () => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Failed to update status:", errorData.detail || response.statusText);
+        throw new Error(errorData.detail);
         return;
       }
 
       // Update local state after successful backend update
       setRegulations(prev =>
-  prev.map(reg =>
-    reg._id === selectedReg._id
-      ? {
-          ...reg,
-          versions: reg.versions.map(v =>
-            v.id === currentVersionData?.id // use optional chaining
-              ? {
-                  ...v,
-                  detailedChanges: v.detailedChanges?.map(dc =>
-                    dc.id === changeId ? { ...dc, status } : dc
-                  ) || [],
-                }
-              : v
-          ),
-        }
-      : reg
-  )
-);
-
-
+        prev.map(reg =>
+          reg._id === selectedReg._id
+            ? {
+                ...reg,
+                versions: reg.versions.map(v =>
+                  v.id === currentVersionData?.id // use optional chaining
+                    ? {
+                        ...v,
+                        detailedChanges: v.detailedChanges?.map(dc =>
+                          dc.id === changeId ? { ...dc, status } : dc
+                        ) || [],
+                      }
+                    : v
+                ),
+              }
+            : reg
+        )
+      );
 
     } catch (error) {
-      console.error("Error updating change status:", error);
+      alert(error);
     }
   };
 
