@@ -70,10 +70,7 @@ def analyze_pdfs(before_key: str, after_key: str):
     content = response.content
 
     try:
-        change_list = json.loads(content)
-        for change in change_list:
-            change.update({'status': "pending"})
-        return change_list
+        return json.loads(content)
     except json.JSONDecodeError as e:
 
         return {
@@ -92,3 +89,10 @@ def extract_text_from_s3(key: str) -> str:
             text.append(page.extract_text() or "")
     return "\n".join(text)
  
+if __name__ == "__main__":
+    # Replace with your real S3 keys
+    before_key = "mock_pdf.pdf"
+    after_key = "mock_pdf_edited.pdf"
+
+    result = analyze_pdfs(before_key, after_key)
+    print(json.dumps(result, indent=2))
