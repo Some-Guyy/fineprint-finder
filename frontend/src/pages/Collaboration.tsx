@@ -261,8 +261,10 @@ const DetailedChangesView: React.FC<{
   editingChangeId: string | null;
   editedChanges: { [key: string]: DetailedChange };
   setEditedChanges: React.Dispatch<React.SetStateAction<{ [key: string]: DetailedChange }>>;
+  tempStatus: { [key: string]: 'relevant' | 'not-relevant' };
+  setTempStatus: React.Dispatch<React.SetStateAction<{ [key: string]: 'relevant' | 'not-relevant' }>>;
   statusFilter?: 'all' | 'relevant' | 'pending' | 'not-relevant';
-}> = ({ changes, onEdit, onStatusChange, editingChangeId, editedChanges, setEditedChanges, statusFilter = 'all' }) => {
+}> = ({ changes, onEdit, onStatusChange, editingChangeId, editedChanges, setEditedChanges, tempStatus, setTempStatus, statusFilter = 'all' }) => {
   const [expandedChanges, setExpandedChanges] = useState<Set<string>>(new Set());
 
   // Filter changes based on the status filter
@@ -379,6 +381,7 @@ const DetailedChangesView: React.FC<{
                 </div>
 
                 <div className="flex items-center gap-2 ml-4">
+                  {/* Status buttons for pending changes */}
                   {(change.status === 'pending' || change.status === undefined || !change.status) && (
                     <>
                       <button
@@ -397,6 +400,31 @@ const DetailedChangesView: React.FC<{
                       </button>
                     </>
                   )}
+
+                  {/* Status editing options - only show when editing */}
+                  {isEditing && (change.status === 'relevant' || change.status === 'not-relevant') && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setTempStatus({ ...tempStatus, [change.id]: 'relevant' })}
+                        className={`flex items-center gap-1 px-2 py-1 text-xs border rounded ${tempStatus[change.id] === 'relevant' 
+                          ? 'border-green-500 bg-green-100 text-green-800' 
+                          : 'border-green-300 hover:bg-green-50 text-green-700'}`}
+                      >
+                        <CheckCircle size={12} />
+                        Relevant
+                      </button>
+                      <button
+                        onClick={() => setTempStatus({ ...tempStatus, [change.id]: 'not-relevant' })}
+                        className={`flex items-center gap-1 px-2 py-1 text-xs border rounded ${tempStatus[change.id] === 'not-relevant' 
+                          ? 'border-red-500 bg-red-100 text-red-800' 
+                          : 'border-red-300 hover:bg-red-50 text-red-700'}`}
+                      >
+                        <AlertCircle size={12} />
+                        Not Relevant
+                      </button>
+                    </div>
+                  )}
+
                   <button
                     onClick={() => onEdit(change.id)}
                     className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
@@ -496,6 +524,7 @@ const RegulationManagementPlatform: React.FC = () => {
   const [isAddingRegulation, setIsAddingRegulation] = useState(false);
   const [isUpdatingRegulation, setIsUpdatingRegulation] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'relevant' | 'pending' | 'not-relevant'>('all'); // Filter for changes by status
+  const [tempStatus, setTempStatus] = useState<{ [key: string]: 'relevant' | 'not-relevant' }>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Fetch regulations on component mount
@@ -721,11 +750,15 @@ const RegulationManagementPlatform: React.FC = () => {
   };
 
   // Editing changes
-  const handleEditChange = (changeId: string) => {
+  const handleEditChange = async (changeId: string) => {
     if (editingChangeId === changeId) {
       // Save the edited change
       const editedChange = editedChanges[changeId];
+      const newStatus = tempStatus[changeId];
+      const change = currentVersionData?.detailedChanges?.find(dc => dc.id === changeId);
+      
       if (editedChange && selectedReg && currentVersionData) {
+        // Update content locally
         setRegulations(prev => prev.map(reg =>
           reg._id === selectedReg._id
             ? {
@@ -744,11 +777,23 @@ const RegulationManagementPlatform: React.FC = () => {
             : reg
         ));
       }
+
+      // Handle status change if there's a new status
+      if (newStatus && change && newStatus !== change.status) {
+        await handleChangeStatusUpdate(changeId, newStatus);
+      }
+
+      // Clean up editing state
       setEditingChangeId(null);
       setEditedChanges(prev => {
         const newState = { ...prev };
         delete newState[changeId];
         return newState;
+      });
+      setTempStatus(prev => {
+        const newTemp = { ...prev };
+        delete newTemp[changeId];
+        return newTemp;
       });
     } else {
       // Start editing
@@ -756,6 +801,10 @@ const RegulationManagementPlatform: React.FC = () => {
       if (change) {
         setEditedChanges(prev => ({ ...prev, [changeId]: { ...change } }));
         setEditingChangeId(changeId);
+        // Initialize temporary status if the change has a status
+        if (change.status === 'relevant' || change.status === 'not-relevant') {
+          setTempStatus(prev => ({ ...prev, [changeId]: change.status as 'relevant' | 'not-relevant' }));
+        }
       }
     }
   };
@@ -1066,6 +1115,8 @@ const RegulationManagementPlatform: React.FC = () => {
                             editingChangeId={editingChangeId}
                             editedChanges={editedChanges}
                             setEditedChanges={setEditedChanges}
+                            tempStatus={tempStatus}
+                            setTempStatus={setTempStatus}
                             statusFilter={statusFilter}
                           />
                         </div>
