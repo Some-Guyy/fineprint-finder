@@ -62,7 +62,6 @@ async def create_regulation(title: str = Body(...), version: str = Body(...), fi
         logging.exception("Failed to create regulation")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # Upload another PDF to update the regulation
 @router.post("/regulations/{reg_id}/versions")
 async def add_regulation_version(reg_id: str, version: str = Body(...), file: UploadFile = File(...)):
@@ -88,12 +87,12 @@ async def add_regulation_version(reg_id: str, version: str = Body(...), file: Up
         raise HTTPException(
             status_code=500,
             detail={
-                "error": "Analysis failed",
-                "details": detailed_changes
+                "error": detailed_changes,
+                "details": "Analysis failed"
             }
     )
 
-    upload_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    upload_date = datetime.now().strftime('%Y-%m-%d')
 
     new_version = {
         "id": f"v{len(reg_doc['versions']) + 1}",
@@ -105,15 +104,22 @@ async def add_regulation_version(reg_id: str, version: str = Body(...), file: Up
     }
 
     # Update Mongo
-    regulation_collection.update_one(
-        {"_id": ObjectId(reg_id)},
-        {
-            "$push": {"versions": new_version},
-            "$set": {"lastUpdated": upload_date, "status": "pending"}
-        }
-    )
+    try:
+        regulation_collection.update_one(
+            {"_id": ObjectId(reg_id)},
+            {
+                "$push": {"versions": new_version},
+                "$set": {"lastUpdated": upload_date, "status": "pending"}
+            }
+        )
 
-    return {"message": "New version added", "version": new_version}
+        return {"message": "New version added", "version": new_version}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={
+            "error": str(e),
+            "details": "Failed to add new version"
+        })
 
 # Change status of a change
 @router.put("/regulations/{reg_id}/versions/{version_id}/changes/{change_id}")
