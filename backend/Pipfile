@@ -10,10 +10,8 @@ uvicorn = "*"
 pymongo = "*" 
 python-dotenv = "*"
 boto3 = "*"
-langchain-perplexity = "*"
 pdfplumber = "*"
 perplexityai = "*"
-langchain-core = "*"
 langsmith = "*"
 
 [dev-packages]
