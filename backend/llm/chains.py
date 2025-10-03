@@ -55,19 +55,18 @@ def comparison(before_text,after_text,before_range,after_range):
     Valid JSON example format (do not include commentary):
 
     [
-    {
-        "id": "change-1",
-        "summary": "Threshold increased from 100 to 200 units.",
-        "analysis": "This broadens the scope of compliance, affecting small entities. Larger organizations are less impacted.",
-        "change": "Threshold raised from 100 to 200 units.",
-        "before_quote": "Page 12: 'Entities with more than 100 units...'",
-        "after_quote": "Page 12: 'Entities with more than 200 units...'",
-        "type": "threshold change",
-        "confidence": 0.87
-    }
+        {{
+            "id": "change-1",
+            "summary": "Threshold increased from 100 to 200 units.",
+            "analysis": "This broadens the scope of compliance, affecting small entities. Larger organizations are less impacted.",
+            "change": "Threshold raised from 100 to 200 units.",
+            "before_quote": "Page 12: 'Entities with more than 100 units...'",
+            "after_quote": "Page 12: 'Entities with more than 200 units...'",
+            "type": "threshold change",
+            "confidence": 0.87
+        }}
     ]
     """
-
 
     
     messages = [
