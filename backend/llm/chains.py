@@ -19,6 +19,74 @@ MODEL = "sonar-pro"
 
 @traceable(run_type="chain")
 def comparison(before_text,after_text,before_range,after_range):
+
+    output_schema = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "id": {
+                "type": "string",
+                "pattern": "^change-[0-9]+$"
+            },
+            "summary": {
+                "type": "string",
+                "minLength": 1
+            },
+            "analysis": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+            },
+            "change": {
+                "type": "string",
+                "minLength": 1
+            },
+            "before_quote": {
+                "type": "string",
+                "minLength": 1
+            },
+            "after_quote": {
+                "type": "string",
+                "minLength": 1
+            },
+            "type": {
+                "type": "string",
+                "enum": [
+                    "addition",
+                    "deletion",
+                    "modification",
+                    "renumbering",
+                    "scope change",
+                    "threshold change",
+                    "definition change",
+                    "reference update",
+                    "timeline change",
+                    "penalty change",
+                    "procedural change",
+                    "unchanged"
+                ]
+            },
+            "confidence": {
+                "type": "number",
+                "minimum": 0.0,
+                "maximum": 1.0
+            }
+        },
+        "required": [
+            "id",
+            "summary",
+            "analysis",
+            "change",
+            "before_quote",
+            "after_quote",
+            "type",
+            "confidence"
+        ],
+        "additionalProperties": False
+    }
+}
+    
     user_msg = f"""User:
     You are given the page ranges of the enacting term of the respective pdfs compare them and look for changes that compliance teams will need to know:
 
@@ -64,6 +132,7 @@ def comparison(before_text,after_text,before_range,after_range):
         model=MODEL,
         temperature=0,
         messages=messages,
+        response_format={"type": "json_schema", "json_schema": {"schema": output_schema}},
     )
 
     content = completion.choices[0].message.content
