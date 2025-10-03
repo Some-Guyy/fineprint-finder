@@ -19,41 +19,56 @@ MODEL = "sonar-pro"
 
 @traceable(run_type="chain")
 def comparison(before_text,after_text,before_range,after_range):
-    user_msg = f"""User:
-    You are given the page ranges of the enacting term of the respective pdfs compare them and look for changes that compliance teams will need to know:
+    user_msg = f"""
+    You are an assistant that compares two versions of legal text (before and after) and produces a strictly valid JSON array of detected changes.
 
-    Before pdf:{before_text}
-    Before pdf page range {before_range}
-    After pdf:{after_text}
-    After pdf page range:{after_range}
-    Output:
-    For each change found respond with ONLY a JSON array (no extra text) and each array element must be a JSON object with these fields:
-    - id (string, must increment sequentially: change-1, change-2, …)
-    - summary (string, one sentence in plain language)
-    - analysis (string, 2–4 sentences on implications, scope, who is affected)
+    Input:
+    - Before PDF text: {before_text}
+    - Before PDF enacting term page range: {before_range}
+    - After PDF text: {after_text}
+    - After PDF enacting term page range: {after_range}
+
+    Task:
+    Return ONLY valid JSON (UTF-8). The response MUST be a single JSON array. 
+    Each array element must be a JSON object with exactly these fields:
+    - id (string, sequential: change-1, change-2, …)
+    - summary (string, one plain-language sentence)
+    - analysis (string, 2–4 sentences: implications, scope, who is affected)
     - change (string, precise description of the edit)
-    - before_quote (string, exact excerpt + page number of before pdf)
-    - after_quote (string, exact excerpt + page number of after pdf)
+    - before_quote (string, exact excerpt from BEFORE text with page number)
+    - after_quote (string, exact excerpt from AFTER text with page number)
     - type (string, one of: addition | deletion | modification | renumbering | scope change | threshold change | definition change | reference update | timeline change | penalty change | procedural change | unchanged)
-    - confidence (float, 0.00–1.00)
+    - confidence (float between 0.0 and 1.0)
 
-    Rules:
-    - Your ENTIRE response must be a JSON array
-    - Do NOT include explanations, markdown, or text outside the JSON.
-    - Do NOT add comments or keys that are not listed.
+    Strict Rules:
+    - Output MUST be valid JSON. No markdown, no text before or after.
+    - Escape all quotes and newlines inside strings properly.
+    - Do not include keys other than those listed.
+    - If there are no changes, return [].
 
-    Method:
-    Extract and align sections by titles/numbering; note renumbering if applicable.
-    For each aligned or unmatched section, detect substantive edits; ignore cosmetic edits.
-    Prefer 2–6 sentence evidence quotes per side.
+    Guidelines:
+    - Align sections by titles/numbering; note renumbering if applicable.
+    - Capture substantive edits only; ignore cosmetic formatting changes.
+    - Quotes should be 2–6 sentences long for context.
+    - Only mark "unchanged" if you are highly certain there is no substantive difference.
 
-    Also include:
-    - Unchanged sections: list ids/titles with brief reason.
-    - Potentially related edits: cross-references, global metadata (title, effective date, jurisdiction).
+    Valid JSON example format (do not include commentary):
 
-    Format:
-    Only a list containing JSON arrays containing those same fields for each change entry.
+    [
+    {
+        "id": "change-1",
+        "summary": "Threshold increased from 100 to 200 units.",
+        "analysis": "This broadens the scope of compliance, affecting small entities. Larger organizations are less impacted.",
+        "change": "Threshold raised from 100 to 200 units.",
+        "before_quote": "Page 12: 'Entities with more than 100 units...'",
+        "after_quote": "Page 12: 'Entities with more than 200 units...'",
+        "type": "threshold change",
+        "confidence": 0.87
+    }
+    ]
     """
+
+
     
     messages = [
         {"role": "system", "content": SYSTEM_MSG},
