@@ -533,7 +533,7 @@ const RegulationManagementPlatform: React.FC = () => {
       try {
         setLoading(true);
 
-        const response = await fetch('http://127.0.0.1:9000/regulations');
+        const response = await fetch('http://ec2-13-40-255-150.eu-west-2.compute.amazonaws.com:9000/regulations');
 
         if (!response.ok) {
           throw new Error(`Failed to fetch regulations: ${response.statusText}`);
@@ -664,7 +664,7 @@ const RegulationManagementPlatform: React.FC = () => {
       formData.append("version", newVersionTitle.trim());
 
       // POST to backend
-      const res = await fetch("http://127.0.0.1:9000/regulations", {
+      const res = await fetch("http://ec2-13-40-255-150.eu-west-2.compute.amazonaws.com:9000/regulations", {
         method: "POST",
         body: formData,
       });
@@ -717,7 +717,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
       const regId = selectedReg?._id;
 
-      const res = await fetch(`http://127.0.0.1:9000/regulations/${regId}/versions`, {
+      const res = await fetch(`http://ec2-13-40-255-150.eu-west-2.compute.amazonaws.com:9000/regulations/${regId}/versions`, {
         method: "POST",
         body: formData,
       });
@@ -831,7 +831,7 @@ const RegulationManagementPlatform: React.FC = () => {
       // console.log("Frontend order:", selectedReg.versions.map(v => v.id));
 
       const response = await fetch(
-        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}`,
+        `http://ec2-13-40-255-150.eu-west-2.compute.amazonaws.com:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}`,
         {
           method: 'PUT',
           headers: {

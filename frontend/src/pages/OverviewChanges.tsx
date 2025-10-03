@@ -84,7 +84,7 @@ const RelevantChangesPage: React.FC = () => {
     const fetchRegulations = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://127.0.0.1:9000/regulations');
+        const response = await fetch('http://ec2-13-40-255-150.eu-west-2.compute.amazonaws.com:9000/regulations');
         
         if (!response.ok) {
           throw new Error(`Failed to fetch regulations: ${response.statusText}`);
