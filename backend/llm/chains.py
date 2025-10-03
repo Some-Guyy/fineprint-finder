@@ -78,7 +78,6 @@ def comparison(before_text,after_text,before_range,after_range):
         model=MODEL,
         temperature=0,
         messages=messages,
-        response_format={"type": "json_schema", "json_schema": {"schema": output_schema}},
     )
 
     content = completion.choices[0].message.content
