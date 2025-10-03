@@ -90,10 +90,4 @@ def analyze_pdfs(before_key: str, after_key: str):
     
     content = comparison(before_doc_text, after_doc_text, before_range, after_range)
 
-    try:
-        return json.loads(content)
-    except json.JSONDecodeError as e:
-        return {
-            "error" : "Invalid JSON from LLM",
-            "details": str(e),
-            }
+    return json.loads(content)

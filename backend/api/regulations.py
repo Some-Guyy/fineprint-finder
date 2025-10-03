@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from datetime import datetime
 from pathlib import Path
 from bson import ObjectId
+import json
 import logging
 import shutil
 
@@ -81,17 +82,19 @@ async def add_regulation_version(reg_id: str, version: str = Body(...), file: Up
 
     before_key = reg_doc["versions"][-1]["s3Key"]
 
-    detailed_changes = analyze_pdfs(before_key, s3_key)
-    
-    if not isinstance(detailed_changes, list):
-        raise HTTPException(
-            status_code=500,
+    try:
+        detailed_changes = analyze_pdfs(before_key, s3_key)
+        
+    except json.JSONDecodeError as e:
+        print("JSON decode error:", e)
+        print("Raw content that failed to parse:", repr(e.doc))
+        raise HTTPException(status_code=500, 
             detail={
-                "error": detailed_changes,
-                "details": "Analysis failed"
-            }
+            "error": str(e),
+            "details": "Failed to parse analysis result"
+        }
     )
-
+        
     upload_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     new_version = {
