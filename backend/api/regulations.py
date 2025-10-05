@@ -191,3 +191,33 @@ async def delete_regulation_version(reg_id: str, version_id: str):
     except Exception as e:
         logging.exception("Failed to delete version")
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.delete("/regulations/{reg_id}")
+async def delete_regulation(reg_id: str):
+    try:
+        reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
+        if not reg_doc:
+            raise HTTPException(status_code=404, detail="Regulation not found")
+
+        # Get all s3 keys to loop through and delete 
+        s3_keys = [v["s3Key"] for v in reg_doc.get("versions", []) if "s3Key" in v]
+
+        if s3_keys:
+            try:
+                s3_client.delete_objects(
+                    Bucket=s3_bucket,
+                    Delete={"Objects": [{"Key": key} for key in s3_keys]}
+                )
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to delete S3 objects: {str(e)}")
+
+        # Remove regulation from MongoDB
+        regulation_collection.delete_one({"_id": ObjectId(reg_id)})
+
+        return {"message": f"Regulation '{reg_doc['title']}' and all its versions deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to delete regulation")
+        raise HTTPException(status_code=500, detail=str(e))
