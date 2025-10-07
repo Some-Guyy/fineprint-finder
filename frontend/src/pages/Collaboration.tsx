@@ -39,243 +39,29 @@ interface Comment {
   timestamp: string;
 }
 
-// const mockRegulations: Regulation[] = [
-//   {
-//     id: '1',
-//     title: 'EU Cookie Consent Regulation 2024',
-//     lastUpdated: '2024-09-01',
-//     status: 'pending',
-//     versions: [
-//       {
-//         id: 'v2',
-//         version: '2.0',
-//         uploadDate: '2024-09-01',
-//         fileName: 'eu_cookie_consent_v2.pdf',
-//         detailedChanges: [
-//           {
-//             id: "change-1",
-//             summary: "The updated regulation intensifies enforcement on prior consent and explicitly prohibits pre-ticked boxes and dark patterns in cookie consent mechanisms.",
-//             analysis: "This change reflects a stricter regulatory stance emphasizing that consent must be freely given, specific, informed, and unambiguous. It affects all website operators targeting EU users, requiring them to redesign cookie banners to avoid manipulative designs and ensure no cookies are set before consent. This raises compliance costs but enhances user privacy protection.",
-//             change: "Explicit prohibition of pre-ticked boxes and dark patterns; requirement that no non-essential cookies be set before active user consent.",
-//             before_quote: '"Consent must be obtained before any cookies are set, and pre-ticked boxes or implied consent are not valid." (Page 5, Section 3.2)',
-//             after_quote: '"Consent must be freely given, specific, informed, and unambiguous. Pre-ticked boxes or any form of default consent are prohibited. No cookies may be set prior to obtaining explicit consent." (Page 6, Section 3.2)',
-//             type: "modification",
-//             confidence: 1.00
-//           },
-//           {
-//             id: "change-2",
-//             summary: "The new regulation mandates granular consent options for different cookie categories rather than a single blanket acceptance.",
-//             analysis: "This change requires websites to provide users with clear choices to accept or reject specific categories such as analytics, advertising, and functionality cookies. It increases transparency and user control but may complicate consent management for businesses. This aligns with GDPR principles and addresses user demand for more nuanced privacy controls.",
-//             change: "Introduction of mandatory granular consent controls for cookie categories.",
-//             before_quote: '"Consent may be obtained via a single acceptance mechanism covering all cookies used." (Page 7, Section 4.1)',
-//             after_quote: '"Users must be provided with granular controls to consent to individual categories of cookies, including analytics, advertising, and functional cookies." (Page 8, Section 4.1)',
-//             type: "modification",
-//             confidence: 1.00
-//           },
-//           {
-//             id: "change-3",
-//             summary: "The updated regulation requires maintaining detailed records of user consent for auditability and compliance verification.",
-//             analysis: "This procedural change obliges data controllers to keep verifiable logs of consent, including timestamps, categories accepted or declined, and user location. This facilitates regulatory audits and enforcement actions, increasing accountability but also administrative burden on organizations.",
-//             change: "Requirement to maintain detailed, auditable records of consent.",
-//             before_quote: '"Controllers should keep records of consent but no specific format or detail is mandated." (Page 9, Section 5.3)',
-//             after_quote: '"Controllers must maintain verifiable records of each user\'s consent preferences, including timestamps, categories consented to or declined, and user location, to ensure auditability." (Page 10, Section 5.3)',
-//             type: "procedural change",
-//             confidence: 1.00
-//           },
-//           {
-//             id: "change-4",
-//             summary: "The new regulation clarifies that legitimate interest cannot be used as a legal basis for setting analytics or advertising cookies without consent.",
-//             analysis: "This narrows the scope of lawful cookie use, emphasizing that consent is the only valid legal basis for non-essential cookies. It impacts businesses relying on legitimate interest to avoid consent mechanisms, requiring them to obtain explicit consent or cease such cookie use.",
-//             change: "Removal of legitimate interest as a legal basis for analytics and advertising cookies.",
-//             before_quote: '"Legitimate interest may be used as a legal basis for analytics cookies under certain conditions." (Page 11, Section 6.2)',
-//             after_quote: '"Legitimate interest is not a valid legal basis for setting analytics or advertising cookies; explicit consent is required." (Page 12, Section 6.2)',
-//             type: "modification",
-//             confidence: 1.00
-//           },
-//           {
-//             id: "change-5",
-//             summary: "The updated regulation introduces stricter penalties and enforcement mechanisms for non-compliance, including higher fines and faster investigation timelines.",
-//             analysis: "This change signals a shift from warnings to active enforcement with significant financial consequences for violations. It increases the risk for organizations that fail to comply, incentivizing prompt and thorough adherence to cookie consent rules.",
-//             change: "Increased penalties and accelerated enforcement procedures.",
-//             before_quote: '"Penalties for non-compliance may include fines up to €20 million or 4% of global turnover." (Page 13, Section 7.1)',
-//             after_quote: '"Penalties have been increased, with fines up to €40 million or 6% of global turnover, and enforcement actions will be expedited to ensure swift compliance." (Page 14, Section 7.1)',
-//             type: "penalty change",
-//             confidence: 0.95
-//           }
-//         ]
-//       },
-//       {
-//         id: 'v1',
-//         version: '1.0',
-//         uploadDate: '2024-01-10',
-//         fileName: 'eu_cookie_consent_v1.pdf',
-//         detailedChanges: []
-//       }
-//     ],
-//     comments: [
-//       {
-//         id: 'c1',
-//         author: 'Sarah Chen',
-//         content: 'The prohibition of dark patterns will require complete redesign of our consent banners across all digital platforms. We need to audit current implementations immediately.',
-//         timestamp: '2024-09-02 10:30'
-//       },
-//       {
-//         id: 'c2',
-//         author: 'Michael Rodriguez',
-//         content: 'Legal team confirms that legitimate interest can no longer be used for analytics cookies. This will significantly impact our data collection capabilities.',
-//         timestamp: '2024-09-02 14:15'
-//       },
-//       {
-//         id: 'c3',
-//         author: 'David Kim',
-//         content: 'The increased penalties (€40M or 6% of turnover) make this a critical compliance priority. Recommend immediate project kickoff.',
-//         timestamp: '2024-09-03 09:00'
-//       }
-//     ]
-//   },
-//   {
-//     id: '2',
-//     title: 'MiFID II Investment Services',
-//     lastUpdated: '2024-08-01',
-//     status: 'validated',
-//     versions: [
-//       {
-//         id: 'v4',
-//         version: '4.0',
-//         uploadDate: '2024-09-01',
-//         fileName: 'mifid_ii_v4.pdf',
-//         detailedChanges: []
-//       },
-//       {
-//         id: 'v3',
-//         version: '3.0',
-//         uploadDate: '2024-06-15',
-//         fileName: 'mifid_ii_v3.pdf',
-//         detailedChanges: []
-//       },
-//       {
-//         id: 'v2',
-//         version: '2.0',
-//         uploadDate: '2024-03-15',
-//         fileName: 'mifid_ii_v2.pdf',
-//         detailedChanges: []
-//       },
-//       {
-//         id: 'v1',
-//         version: '1.0',
-//         uploadDate: '2024-01-10',
-//         fileName: 'mifid_ii_v1.pdf',
-//         detailedChanges: []
-//       }
-//     ],
-//     comments: [
-//       {
-//         id: 'c1',
-//         author: 'Sarah Chen',
-//         content: 'The ESG requirements in v4.0 will require significant IT infrastructure changes. We should prioritize the algorithmic trading controls.',
-//         timestamp: '2024-08-16 10:30'
-//       },
-//       {
-//         id: 'c2',
-//         author: 'Michael Rodriguez',
-//         content: 'Compliance team is already working on the ESG scoring methodology. Timeline looks tight for Q1 2025.',
-//         timestamp: '2024-08-16 14:15'
-//       }
-//     ]
-//   },
-//   {
-//     id: '3',
-//     title: 'Basel III Capital Requirements',
-//     lastUpdated: '2024-08-20',
-//     status: 'validated',
-//     versions: [
-//       {
-//         id: 'v3',
-//         version: '3.0',
-//         uploadDate: '2024-08-20',
-//         fileName: 'basel_iii_v3.pdf',
-//         detailedChanges: []
-//       },
-//       {
-//         id: 'v2',
-//         version: '2.0',
-//         uploadDate: '2024-05-15',
-//         fileName: 'basel_iii_v2.pdf',
-//         detailedChanges: []
-//       },
-//       {
-//         id: 'v1',
-//         version: '1.0',
-//         uploadDate: '2024-01-10',
-//         fileName: 'basel_iii_v1.pdf',
-//         detailedChanges: []
-//       }
-//     ],
-//     comments: [
-//       {
-//         id: 'c1',
-//         author: 'David Kim',
-//         content: 'Climate risk integration is complex but necessary. Risk team is evaluating third-party climate data providers.',
-//         timestamp: '2024-08-21 09:45'
-//       }
-//     ]
-//   },
-//   {
-//     id: '4',
-//     title: 'GDPR Privacy Amendment 2024',
-//     lastUpdated: '2024-07-10',
-//     status: 'validated',
-//     versions: [
-//       {
-//         id: 'v1',
-//         version: '1.0',
-//         uploadDate: '2024-07-10',
-//         fileName: 'gdpr_amendment_2024.pdf',
-//         detailedChanges: []
-//       }
-//     ],
-//     comments: []
-//   },
-//   {
-//     id: '5',
-//     title: 'EU Cookie Directive',
-//     lastUpdated: '2025-09-15',
-//     status: 'pending',
-//     versions: [
-//       {
-//         id: 'v1',
-//         version: '1.0',
-//         uploadDate: '2025-09-15',
-//         fileName: 'gdpr_amendment_2024.pdf',
-//         detailedChanges: []
-//       }
-//     ],
-//     comments: []
-//   }
-// ];
-
 const DetailedChangesView: React.FC<{
   changes: DetailedChange[];
   onEdit: (changeId: string) => void;
   onStatusChange: (changeId: string, status: 'relevant' | 'not-relevant') => void;
+  onDelete: (changeId: string) => void;
   editingChangeId: string | null;
   editedChanges: { [key: string]: DetailedChange };
   setEditedChanges: React.Dispatch<React.SetStateAction<{ [key: string]: DetailedChange }>>;
   tempStatus: { [key: string]: 'relevant' | 'not-relevant' };
   setTempStatus: React.Dispatch<React.SetStateAction<{ [key: string]: 'relevant' | 'not-relevant' }>>;
   statusFilter?: 'all' | 'relevant' | 'pending' | 'not-relevant';
-}> = ({ changes, onEdit, onStatusChange, editingChangeId, editedChanges, setEditedChanges, tempStatus, setTempStatus, statusFilter = 'all' }) => {
+}> = ({ changes, onEdit, onStatusChange, onDelete, editingChangeId, editedChanges, setEditedChanges, tempStatus, setTempStatus, statusFilter = 'all' }) => {
   const [expandedChanges, setExpandedChanges] = useState<Set<string>>(new Set());
 
   // Filter changes based on the status filter
-  const filteredChanges = statusFilter === 'all' 
-    ? changes 
+  const filteredChanges = statusFilter === 'all'
+    ? changes
     : changes.filter(change => {
-        if (statusFilter === 'pending') {
-          return !change.status || change.status === 'pending';
-        }
-        return change.status === statusFilter;
-      });
+      if (statusFilter === 'pending') {
+        return !change.status || change.status === 'pending';
+      }
+      return change.status === statusFilter;
+    });
 
   const toggleExpand = (changeId: string) => {
     const newExpanded = new Set(expandedChanges);
@@ -338,13 +124,7 @@ const DetailedChangesView: React.FC<{
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <button
-                      onClick={() => toggleExpand(change.id)}
-                      className="flex items-center gap-1 hover:bg-gray-200 px-2 py-1 rounded"
-                    >
-                      {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                      <span className="font-medium">Change {originalIndex + 1}</span>
-                    </button>
+                    <span className="font-medium">Change {originalIndex + 1}</span>
                     <span className={`px-2 py-1 text-xs rounded-full ${change.type === 'modification' ? 'bg-blue-100 text-blue-800' :
                       change.type === 'procedural change' ? 'bg-green-100 text-green-800' :
                         change.type === 'penalty change' ? 'bg-red-100 text-red-800' :
@@ -368,6 +148,8 @@ const DetailedChangesView: React.FC<{
                     </span>
                   </div>
 
+
+                  <h5 className="font-medium mb-2">Summary</h5>
                   {isEditing ? (
                     <textarea
                       value={editedChange.summary}
@@ -378,7 +160,18 @@ const DetailedChangesView: React.FC<{
                   ) : (
                     <p className="text-gray-700 text-sm">{change.summary}</p>
                   )}
+
+                  <div className="flex items-center gap-2 my-2">
+                    <button
+                      onClick={() => toggleExpand(change.id)}
+                      className="flex items-center gap-1 hover:bg-gray-200 px-2 py-1 rounded"
+                    >
+                      {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      <span className="font-medium">{isExpanded ? 'Hide change details' : 'View change details'}</span>
+                    </button>
+                  </div>
                 </div>
+
 
                 <div className="flex items-center gap-2 ml-4">
                   {/* Status buttons for pending changes */}
@@ -406,8 +199,8 @@ const DetailedChangesView: React.FC<{
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setTempStatus({ ...tempStatus, [change.id]: 'relevant' })}
-                        className={`flex items-center gap-1 px-2 py-1 text-xs border rounded ${tempStatus[change.id] === 'relevant' 
-                          ? 'border-green-500 bg-green-100 text-green-800' 
+                        className={`flex items-center gap-1 px-2 py-1 text-xs border rounded ${tempStatus[change.id] === 'relevant'
+                          ? 'border-green-500 bg-green-100 text-green-800'
                           : 'border-green-300 hover:bg-green-50 text-green-700'}`}
                       >
                         <CheckCircle size={12} />
@@ -415,8 +208,8 @@ const DetailedChangesView: React.FC<{
                       </button>
                       <button
                         onClick={() => setTempStatus({ ...tempStatus, [change.id]: 'not-relevant' })}
-                        className={`flex items-center gap-1 px-2 py-1 text-xs border rounded ${tempStatus[change.id] === 'not-relevant' 
-                          ? 'border-red-500 bg-red-100 text-red-800' 
+                        className={`flex items-center gap-1 px-2 py-1 text-xs border rounded ${tempStatus[change.id] === 'not-relevant'
+                          ? 'border-red-500 bg-red-100 text-red-800'
                           : 'border-red-300 hover:bg-red-50 text-red-700'}`}
                       >
                         <AlertCircle size={12} />
@@ -431,6 +224,17 @@ const DetailedChangesView: React.FC<{
                   >
                     <Edit3 size={14} />
                     {isEditing ? 'Save' : 'Edit'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete this change? This action cannot be undone.')) {
+                        onDelete(change.id);
+                      }
+                    }}
+                    className="flex items-center gap-1 px-3 py-1 text-sm border border-red-300 rounded hover:bg-red-50 text-red-600"
+                  >
+                    <Trash2 size={14} />
+                    Delete
                   </button>
                 </div>
               </div>
@@ -627,7 +431,7 @@ const RegulationManagementPlatform: React.FC = () => {
     }
     isOldestVersion = !previousVersionData;
   }
-  
+
   // console.log(selectedReg)
   // console.log(currentVersionData)
 
@@ -724,11 +528,11 @@ const RegulationManagementPlatform: React.FC = () => {
 
       const data = await res.json();
       if (!res.ok) {
-          const errorMessage = 
-              data.detail && typeof data.detail === 'object' && 'details' in data.detail
-                  ? data.detail.details
-                  : data.detail;
-          throw new Error(errorMessage);
+        const errorMessage =
+          data.detail && typeof data.detail === 'object' && 'details' in data.detail
+            ? data.detail.details
+            : data.detail;
+        throw new Error(errorMessage);
       }
 
       const updatedRegulations = regulations.map((reg) =>
@@ -760,7 +564,7 @@ const RegulationManagementPlatform: React.FC = () => {
       const editedChange = editedChanges[changeId];
       const newStatus = tempStatus[changeId];
       const change = currentVersionData?.detailedChanges?.find(dc => dc.id === changeId);
-      
+
       if (editedChange && selectedReg && currentVersionData) {
         // Update content locally
         setRegulations(prev => prev.map(reg =>
@@ -845,7 +649,6 @@ const RegulationManagementPlatform: React.FC = () => {
         const errorData = await response.json();
         console.error("Failed to update status:", errorData.detail || response.statusText);
         throw new Error(errorData.detail);
-        return;
       }
 
       // Update local state after successful backend update
@@ -853,24 +656,91 @@ const RegulationManagementPlatform: React.FC = () => {
         prev.map(reg =>
           reg._id === selectedReg._id
             ? {
-                ...reg,
-                versions: reg.versions.map(v =>
-                  v.id === currentVersionData?.id // use optional chaining
-                    ? {
-                        ...v,
-                        detailedChanges: v.detailedChanges?.map(dc =>
-                          dc.id === changeId ? { ...dc, status } : dc
-                        ) || [],
-                      }
-                    : v
-                ),
-              }
+              ...reg,
+              versions: reg.versions.map(v =>
+                v.id === currentVersionData?.id // use optional chaining
+                  ? {
+                    ...v,
+                    detailedChanges: v.detailedChanges?.map(dc =>
+                      dc.id === changeId ? { ...dc, status } : dc
+                    ) || [],
+                  }
+                  : v
+              ),
+            }
             : reg
         )
       );
 
     } catch (error) {
       alert(error);
+    }
+  };
+
+  // Handle delete change
+  const handleDeleteChange = async (changeId: string) => {
+    if (!selectedReg || !currentVersionData) return;
+
+    try {
+      // Call backend API to delete the change
+
+      // TODO update the endpoint according to backend
+      const response = await fetch(
+        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Failed to delete change:", errorData.detail || response.statusText);
+        alert("Failed to delete change. Please try again.");
+        return;
+      }
+
+      // Update local state after successful backend deletion
+      setRegulations(prev =>
+        prev.map(reg =>
+          reg._id === selectedReg._id
+            ? {
+              ...reg,
+              versions: reg.versions.map(v =>
+                v.id === currentVersionData?.id
+                  ? {
+                    ...v,
+                    detailedChanges: v.detailedChanges?.filter(dc => dc.id !== changeId) || [],
+                  }
+                  : v
+              ),
+            }
+            : reg
+        )
+      );
+
+      // Clear any editing state for the deleted change
+      if (editingChangeId === changeId) {
+        setEditingChangeId(null);
+        setEditedChanges(prev => {
+          const newState = { ...prev };
+          delete newState[changeId];
+          return newState;
+        });
+      }
+
+      // Clear any temp status for the deleted change
+      setTempStatus(prev => {
+        const newState = { ...prev };
+        delete newState[changeId];
+        return newState;
+      });
+
+    } catch (error) {
+      console.error("Error deleting change:", error);
+      alert("Error deleting change. Please try again.");
     }
   };
 
@@ -1115,6 +985,7 @@ const RegulationManagementPlatform: React.FC = () => {
                             changes={currentVersionData.detailedChanges}
                             onEdit={handleEditChange}
                             onStatusChange={handleChangeStatusUpdate}
+                            onDelete={handleDeleteChange}
                             editingChangeId={editingChangeId}
                             editedChanges={editedChanges}
                             setEditedChanges={setEditedChanges}
