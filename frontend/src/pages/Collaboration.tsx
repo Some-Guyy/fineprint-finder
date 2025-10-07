@@ -8,7 +8,6 @@ interface Regulation {
   lastUpdated: string;
   status: 'pending' | 'validated';
   versions: RegulationVersion[];
-  comments: Comment[];
 }
 
 interface RegulationVersion {
@@ -30,6 +29,7 @@ interface DetailedChange {
   type: string;
   confidence: number;
   status?: 'pending' | 'relevant' | 'not-relevant';
+  comments?: Comment[];
 }
 
 interface Comment {
@@ -44,14 +44,16 @@ const DetailedChangesView: React.FC<{
   onEdit: (changeId: string) => void;
   onStatusChange: (changeId: string, status: 'relevant' | 'not-relevant') => void;
   onDelete: (changeId: string) => void;
+  onAddComment: (changeId: string, content: string) => void;
   editingChangeId: string | null;
   editedChanges: { [key: string]: DetailedChange };
   setEditedChanges: React.Dispatch<React.SetStateAction<{ [key: string]: DetailedChange }>>;
   tempStatus: { [key: string]: 'relevant' | 'not-relevant' };
   setTempStatus: React.Dispatch<React.SetStateAction<{ [key: string]: 'relevant' | 'not-relevant' }>>;
   statusFilter?: 'all' | 'relevant' | 'pending' | 'not-relevant';
-}> = ({ changes, onEdit, onStatusChange, onDelete, editingChangeId, editedChanges, setEditedChanges, tempStatus, setTempStatus, statusFilter = 'all' }) => {
+}> = ({ changes, onEdit, onStatusChange, onDelete, onAddComment, editingChangeId, editedChanges, setEditedChanges, tempStatus, setTempStatus, statusFilter = 'all' }) => {
   const [expandedChanges, setExpandedChanges] = useState<Set<string>>(new Set());
+  const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
 
   // Filter changes based on the status filter
   const filteredChanges = statusFilter === 'all'
@@ -303,6 +305,44 @@ const DetailedChangesView: React.FC<{
                     )}
                   </div>
                 </div>
+
+                {/* Comments Section for this change */}
+                <div className="border-t pt-4">
+                  <h5 className="font-medium mb-3">Comments</h5>
+                  <div className="space-y-3 mb-4">
+                    {(change.comments || []).map((comment) => (
+                      <div key={comment.id} className="border-l-4 border-blue-500 pl-4 py-2 bg-gray-50 rounded">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm">{comment.author}</span>
+                          <span className="text-xs text-gray-500">{comment.timestamp}</span>
+                        </div>
+                        <p className="text-gray-700 text-sm">{comment.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <textarea
+                      value={newComments[change.id] || ''}
+                      onChange={(e) => setNewComments(prev => ({ ...prev, [change.id]: e.target.value }))}
+                      placeholder="Add a comment about this change..."
+                      className="w-full p-3 border rounded-lg resize-none text-sm"
+                      rows={2}
+                    />
+                    <button 
+                      onClick={() => {
+                        const content = newComments[change.id];
+                        if (content && content.trim()) {
+                          onAddComment(change.id, content.trim());
+                          setNewComments(prev => ({ ...prev, [change.id]: '' }));
+                        }
+                      }}
+                      disabled={!newComments[change.id] || !newComments[change.id].trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                    >
+                      Add Comment
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -485,8 +525,7 @@ const RegulationManagementPlatform: React.FC = () => {
         version: newVersionTitle,
         lastUpdated: new Date().toISOString().split('T')[0],
         status: 'pending',
-        versions: [],
-        comments: []
+        versions: []
       };
 
       setRegulations((prev) => [...prev, newReg]);
@@ -744,6 +783,55 @@ const RegulationManagementPlatform: React.FC = () => {
     }
   };
 
+  // Handle add comment to change
+  const handleAddComment = async (changeId: string, content: string) => {
+    if (!selectedReg || !currentVersionData || !content.trim()) return;
+
+    try {
+      // Create new comment
+      const newComment: Comment = {
+        id: Date.now().toString(), // Simple ID generation - in production, this should come from backend
+        author: 'Current User', // In production, this should come from authentication
+        content: content.trim(),
+        timestamp: new Date().toLocaleString()
+      };
+
+      // Update local state
+      setRegulations(prev =>
+        prev.map(reg =>
+          reg._id === selectedReg._id
+            ? {
+                ...reg,
+                versions: reg.versions.map(v =>
+                  v.id === currentVersionData?.id
+                    ? {
+                        ...v,
+                        detailedChanges: v.detailedChanges?.map(dc =>
+                          dc.id === changeId 
+                            ? { ...dc, comments: [...(dc.comments || []), newComment] }
+                            : dc
+                        ) || [],
+                      }
+                    : v
+                ),
+              }
+            : reg
+        )
+      );
+
+      // TODO: Call backend API to save the comment
+      // const response = await fetch(`http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}/comments`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ content: content.trim() })
+      // });
+
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      alert("Error adding comment. Please try again.");
+    }
+  };
+
   return (
 
     <div className="min-h-screen bg-gray-50">
@@ -986,6 +1074,7 @@ const RegulationManagementPlatform: React.FC = () => {
                             onEdit={handleEditChange}
                             onStatusChange={handleChangeStatusUpdate}
                             onDelete={handleDeleteChange}
+                            onAddComment={handleAddComment}
                             editingChangeId={editingChangeId}
                             editedChanges={editedChanges}
                             setEditedChanges={setEditedChanges}
@@ -1024,29 +1113,6 @@ const RegulationManagementPlatform: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Comments Section */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Comments</h3>
-                    <div className="space-y-3 mb-4">
-                      {selectedReg.comments.map((comment) => (
-                        <div key={comment.id} className="border-l-4 border-blue-500 pl-4 py-2">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm">{comment.author}</span>
-                            <span className="text-xs text-gray-500">{comment.timestamp}</span>
-                          </div>
-                          <p className="text-gray-700">{comment.content}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <textarea
-                      placeholder="Add a comment..."
-                      className="w-full p-3 border rounded-lg resize-none"
-                      rows={3}
-                    />
-                    <button className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-                      Add Comment
-                    </button>
-                  </div>
                 </div>
               </div>
             ) : (
