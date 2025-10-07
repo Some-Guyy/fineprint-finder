@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info } from 'lucide-react';
+import { Button } from '../components/ui/button';
 
 interface Regulation {
   _id: string;
@@ -126,7 +127,13 @@ const DetailedChangesView: React.FC<{
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium">Change {originalIndex + 1}</span>
+                    <Button variant={"ghost"}
+                      onClick={() => toggleExpand(change.id)}
+                      className="flex items-center gap-1 hover:bg-gray-200 px-2 py-1 rounded"
+                    >
+                      {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                      <span className="font-medium">Change {originalIndex + 1}</span>
+                    </Button>
                     <span className={`px-2 py-1 text-xs rounded-full ${change.type === 'modification' ? 'bg-blue-100 text-blue-800' :
                       change.type === 'procedural change' ? 'bg-green-100 text-green-800' :
                         change.type === 'penalty change' ? 'bg-red-100 text-red-800' :
@@ -162,16 +169,6 @@ const DetailedChangesView: React.FC<{
                   ) : (
                     <p className="text-gray-700 text-sm">{change.summary}</p>
                   )}
-
-                  <div className="flex items-center gap-2 my-2">
-                    <button
-                      onClick={() => toggleExpand(change.id)}
-                      className="flex items-center gap-1 hover:bg-gray-200 px-2 py-1 rounded"
-                    >
-                      {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                      <span className="font-medium">{isExpanded ? 'Hide change details' : 'View change details'}</span>
-                    </button>
-                  </div>
                 </div>
 
 
@@ -179,27 +176,27 @@ const DetailedChangesView: React.FC<{
                   {/* Status buttons for pending changes */}
                   {(change.status === 'pending' || change.status === undefined || !change.status) && (
                     <>
-                      <button
+                      <Button variant="outline"
                         onClick={() => onStatusChange(change.id, 'relevant')}
                         className="flex items-center gap-1 px-2 py-1 text-xs border border-green-300 rounded hover:bg-green-50 text-green-700"
                       >
                         <CheckCircle size={12} />
                         Mark Relevant
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="outline"
                         onClick={() => onStatusChange(change.id, 'not-relevant')}
                         className="flex items-center gap-1 px-2 py-1 text-xs border border-red-300 rounded hover:bg-red-50 text-red-700"
                       >
                         <AlertCircle size={12} />
                         Not Relevant
-                      </button>
+                      </Button>
                     </>
                   )}
 
                   {/* Status editing options - only show when editing */}
                   {isEditing && (change.status === 'relevant' || change.status === 'not-relevant') && (
                     <div className="flex items-center gap-1">
-                      <button
+                      <Button variant="outline"
                         onClick={() => setTempStatus({ ...tempStatus, [change.id]: 'relevant' })}
                         className={`flex items-center gap-1 px-2 py-1 text-xs border rounded ${tempStatus[change.id] === 'relevant'
                           ? 'border-green-500 bg-green-100 text-green-800'
@@ -207,8 +204,8 @@ const DetailedChangesView: React.FC<{
                       >
                         <CheckCircle size={12} />
                         Relevant
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="outline"
                         onClick={() => setTempStatus({ ...tempStatus, [change.id]: 'not-relevant' })}
                         className={`flex items-center gap-1 px-2 py-1 text-xs border rounded ${tempStatus[change.id] === 'not-relevant'
                           ? 'border-red-500 bg-red-100 text-red-800'
@@ -216,18 +213,18 @@ const DetailedChangesView: React.FC<{
                       >
                         <AlertCircle size={12} />
                         Not Relevant
-                      </button>
+                      </Button>
                     </div>
                   )}
 
-                  <button
+                  <Button variant="outline"
                     onClick={() => onEdit(change.id)}
                     className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
                   >
                     <Edit3 size={14} />
                     {isEditing ? 'Save' : 'Edit'}
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="outline"
                     onClick={() => {
                       if (window.confirm('Are you sure you want to delete this change? This action cannot be undone.')) {
                         onDelete(change.id);
@@ -237,7 +234,7 @@ const DetailedChangesView: React.FC<{
                   >
                     <Trash2 size={14} />
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -328,7 +325,7 @@ const DetailedChangesView: React.FC<{
                       className="w-full p-3 border rounded-lg resize-none text-sm"
                       rows={2}
                     />
-                    <button 
+                    <Button variant="secondary" 
                       onClick={() => {
                         const content = newComments[change.id];
                         if (content && content.trim()) {
@@ -337,10 +334,10 @@ const DetailedChangesView: React.FC<{
                         }
                       }}
                       disabled={!newComments[change.id] || !newComments[change.id].trim()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                      className="px-4 py-2  disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                     >
                       Add Comment
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -437,12 +434,12 @@ const RegulationManagementPlatform: React.FC = () => {
           <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Regulations</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button
+          <Button variant="outline"
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -852,13 +849,13 @@ const RegulationManagementPlatform: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Nomura Regulation Management</h1>
-            <button
+            <Button variant="outline"
               onClick={() => setShowAddModal(true)}
               className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Plus size={20} />
               Add New Regulation
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -934,20 +931,20 @@ const RegulationManagementPlatform: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button
+                      <Button variant="outline"
                         onClick={() => handleStatusChange(selectedReg._id)}
                         className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
                       >
                         <Mail size={14} />
                         {selectedReg.status === 'pending' ? 'Validate' : 'Mark Pending'}
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="outline"
                         onClick={() => handleDelete(selectedReg._id)}
                         className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-red-50 text-red-600"
                       >
                         <Trash2 size={14} />
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -1006,13 +1003,13 @@ const RegulationManagementPlatform: React.FC = () => {
                     {newFile && (
                       <div className="mt-3">
                         <p className="text-sm text-gray-600 mb-2">Selected: {newFile.name}</p>
-                        <button
+                        <Button variant="outline"
                           onClick={() => handleUpdateRegulation(newFile)}
                           disabled={!updateVersionTitle || !newFile || isUpdatingRegulation}
                           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                         >
                           {isUpdatingRegulation ? 'Uploading...' : 'Upload New Version'}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -1176,14 +1173,14 @@ const RegulationManagementPlatform: React.FC = () => {
                 />
               </div>
               <div className="flex gap-3 pt-4">
-                <button
+                <Button variant="outline"
                   onClick={handleAddRegulation}
                   disabled={!newTitle || !newFile || !newVersionTitle || isAddingRegulation}
                   className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {isAddingRegulation ? 'Adding...' : 'Add Regulation'}
-                </button>
-                <button
+                </Button>
+                <Button variant="outline"
                   onClick={() => {
                     setShowAddModal(false);
                     setNewTitle("");
@@ -1194,7 +1191,7 @@ const RegulationManagementPlatform: React.FC = () => {
                   disabled={isAddingRegulation}
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           </div>

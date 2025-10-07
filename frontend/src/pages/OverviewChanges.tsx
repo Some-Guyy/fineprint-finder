@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Calendar, ChevronDown, ChevronRight, Info, FileText, ArrowUpDown } from 'lucide-react';
+import { Search, Filter, Download, Calendar as CalendarIcon, ChevronDown, ChevronRight, Info, FileText, ArrowUpDown } from 'lucide-react';
+import { format } from 'date-fns';
+import { Calendar } from '../components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover';
+import { Button } from '../components/ui/button';
+import { Slider } from '../components/ui/slider';
 
 // Import interfaces from Collaboration component
 interface Regulation {
@@ -54,7 +59,7 @@ interface FilterOptions {
   selectedRegulations: string[];
   selectedTypes: string[];
   confidenceRange: [number, number];
-  dateRange: [string, string];
+  dateRange: [Date | undefined, Date | undefined];
   statusFilter: 'all' | 'relevant' | 'pending' | 'not-relevant';
   sortBy: 'date' | 'confidence' | 'regulation' | 'type';
   sortOrder: 'asc' | 'desc';
@@ -73,7 +78,7 @@ const RelevantChangesPage: React.FC = () => {
     selectedRegulations: [],
     selectedTypes: [],
     confidenceRange: [0, 1],
-    dateRange: ['', ''],
+    dateRange: [undefined, undefined],
     statusFilter: 'all', // Default to relevant changes
     sortBy: 'date',
     sortOrder: 'desc'
@@ -172,8 +177,8 @@ const RelevantChangesPage: React.FC = () => {
     if (filters.dateRange[0] && filters.dateRange[1]) {
       filtered = filtered.filter(change => {
         const changeDate = new Date(change.uploadDate);
-        const startDate = new Date(filters.dateRange[0]);
-        const endDate = new Date(filters.dateRange[1]);
+        const startDate = filters.dateRange[0]!;
+        const endDate = filters.dateRange[1]!;
         return changeDate >= startDate && changeDate <= endDate;
       });
     }
@@ -267,22 +272,22 @@ const RelevantChangesPage: React.FC = () => {
               </p>
             </div>
             <div className="flex gap-3">
-              <button
+              <Button variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
                 className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-gray-50"
               >
                 <Filter size={20} />
                 Filters
                 {showFilters ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </button>
-              <button
+              </Button>
+              <Button variant="outline"
                 onClick={handleExport}
                 className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                 disabled={filteredChanges.length === 0}
               >
                 <Download size={20} />
                 Export CSV
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -339,7 +344,7 @@ const RelevantChangesPage: React.FC = () => {
                     <option value="regulation">Regulation</option>
                     <option value="type">Change Type</option>
                   </select>
-                  <button
+                  <Button variant="outline"
                     onClick={() => setFilters(prev => ({ 
                       ...prev, 
                       sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc' 
@@ -347,7 +352,7 @@ const RelevantChangesPage: React.FC = () => {
                     className="px-3 py-2 border rounded-lg hover:bg-gray-50"
                   >
                     <ArrowUpDown size={16} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -416,44 +421,106 @@ const RelevantChangesPage: React.FC = () => {
                 <label className="block text-sm font-medium mb-2">
                   Confidence: {(filters.confidenceRange[0] * 100).toFixed(0)}% - {(filters.confidenceRange[1] * 100).toFixed(0)}%
                 </label>
-                <div className="space-y-2">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={filters.confidenceRange[0]}
-                    onChange={(e) => setFilters(prev => ({ 
-                      ...prev, 
-                      confidenceRange: [Number(e.target.value), prev.confidenceRange[1]] 
-                    }))}
+                <div className="px-3 py-2">
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[
+                      filters.confidenceRange[0] * 100,
+                      filters.confidenceRange[1] * 100
+                    ]}
+                    onValueChange={(value) => {
+                      setFilters(prev => ({
+                        ...prev,
+                        confidenceRange: [
+                          value[0] / 100,
+                          value[1] / 100
+                        ]
+                      }));
+                    }}
                     className="w-full"
                   />
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={filters.confidenceRange[1]}
-                    onChange={(e) => setFilters(prev => ({ 
-                      ...prev, 
-                      confidenceRange: [prev.confidenceRange[0], Number(e.target.value)] 
-                    }))}
-                    className="w-full"
-                  />
+                </div>
+                {/* Value indicators */}
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>0%</span>
+                  <span>25%</span>
+                  <span>50%</span>
+                  <span>75%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Date Range Filter - New Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t">
+              <div>
+                <label className="block text-sm font-medium mb-2">Upload Date Range</label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">From</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {filters.dateRange[0] ? format(filters.dateRange[0], "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={filters.dateRange[0]}
+                          onSelect={(date) => setFilters(prev => ({ 
+                            ...prev, 
+                            dateRange: [date, prev.dateRange[1]] 
+                          }))}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">To</label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {filters.dateRange[1] ? format(filters.dateRange[1], "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={filters.dateRange[1]}
+                          onSelect={(date) => setFilters(prev => ({ 
+                            ...prev, 
+                            dateRange: [prev.dateRange[0], date] 
+                          }))}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Clear Filters */}
             <div className="mt-4 pt-4 border-t">
-              <button
+              <Button variant="outline"
                 onClick={() => setFilters({
                   searchTerm: '',
                   selectedRegulations: [],
                   selectedTypes: [],
                   confidenceRange: [0, 1],
-                  dateRange: ['', ''],
+                  dateRange: [undefined, undefined],
                   statusFilter: 'relevant',
                   sortBy: 'date',
                   sortOrder: 'desc'
@@ -461,7 +528,7 @@ const RelevantChangesPage: React.FC = () => {
                 className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50"
               >
                 Clear All Filters
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -489,13 +556,13 @@ const RelevantChangesPage: React.FC = () => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <button
+                          <Button variant={"ghost"}
                             onClick={() => toggleExpand(change.id)}
                             className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded"
                           >
                             {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                             <span className="font-medium">Change {index + 1}</span>
-                          </button>
+                          </Button>
                           
                           <span className={`px-2 py-1 text-xs rounded-full ${
                             change.type === 'modification' ? 'bg-blue-100 text-blue-800' :
@@ -533,7 +600,7 @@ const RelevantChangesPage: React.FC = () => {
                             {change.versionTitle && ` - ${change.versionTitle}`}
                           </span>
                           <span>
-                            <Calendar size={14} className="inline mr-1" />
+                            <CalendarIcon size={14} className="inline mr-1" />
                             {change.uploadDate}
                           </span>
                         </div>
