@@ -1,6 +1,19 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info } from 'lucide-react';
+import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info, MoreVertical, Calendar, FileIcon } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '../components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 
 interface Regulation {
   _id: string;
@@ -356,6 +369,8 @@ const RegulationManagementPlatform: React.FC = () => {
   const [isUpdatingRegulation, setIsUpdatingRegulation] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'relevant' | 'pending' | 'not-relevant'>('all'); // Filter for changes by status
   const [tempStatus, setTempStatus] = useState<{ [key: string]: 'relevant' | 'not-relevant' }>({});
+  const [showDeleteVersionModal, setShowDeleteVersionModal] = useState(false);
+  const [showVersionDrawer, setShowVersionDrawer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Fetch regulations on component mount
@@ -458,6 +473,8 @@ const RegulationManagementPlatform: React.FC = () => {
     }
     isOldestVersion = !previousVersionData;
   }
+
+
 
   // console.log(selectedReg)
   // console.log(currentVersionData)
@@ -731,6 +748,52 @@ const RegulationManagementPlatform: React.FC = () => {
 
   };
   
+  // Delete a specific version (only latest version)
+  const handleDeleteVersion = async (versionId: string) => {
+    if (!selectedReg || !currentVersionData) return;
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${versionId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Failed to delete version:", errorData.detail || response.statusText);
+        alert("Failed to delete version. Please try again. Error: " + errorData.detail);
+        return;
+      } else {
+        const returnedResponse = await response.json();
+        alert(returnedResponse.message);
+        
+        // Update local state by removing the deleted version
+        setRegulations(prev => prev.map(reg => 
+          reg._id === selectedReg._id 
+            ? { ...reg, versions: reg.versions.filter(v => v.id !== versionId) }
+            : reg
+        ));
+        
+        // Reset to latest if we deleted the currently selected version
+        if (currentVersionData.id === versionId) {
+          setSelectedVersion('latest');
+        }
+        
+        setShowDeleteVersionModal(false);
+      }
+
+    } catch (error) {
+      console.error("Error deleting version:", error);
+      alert("Error deleting version. Please try again.");
+    }
+  };
+
+  
 
   // Handle add comment to change
   const handleAddComment = async (changeId: string, content: string) => {
@@ -864,25 +927,36 @@ const RegulationManagementPlatform: React.FC = () => {
                           }`}>
                           {selectedReg.status.charAt(0).toUpperCase() + selectedReg.status.slice(1)}
                         </span>
-                        <div className="flex items-center gap-2">
-                          <label className="text-sm text-gray-600">Compare versions:</label>
-                          <select
-                            value={selectedVersion}
-                            onChange={(e) => setSelectedVersion(e.target.value)}
-                            className="text-sm border rounded px-2 py-1 bg-white"
-                          >
-                            <option value="latest">Latest vs Previous</option>
-                            {selectedReg.versions.map((version, index) => (
-                              <option key={version.id} value={version.id}>
-                                {version.version} {version.title ? `- ${version.title}` : ''} {index === 0 ? '(Latest)' : ''}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
 
                       </div>
+                        <div className="flex items-center gap-2">
+                          {selectedReg.versions.length > 1 && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <label className="text-sm text-gray-600">Compare:</label>
+                              <select
+                                value={selectedVersion}
+                                onChange={(e) => setSelectedVersion(e.target.value)}
+                                className="text-sm border rounded px-2 py-1 bg-white"
+                              >
+                                <option value="latest">Latest vs Previous</option>
+                                {selectedReg.versions.map((version, index) => (
+                                  <option key={version.id} value={version.id}>
+                                    {version.version} {version.title ? `- ${version.title}` : ''} {index === 0 ? '(Latest)' : ''}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+                        </div>
                     </div>
                     <div className="flex gap-2">
+                      <Button variant="outline"
+                            onClick={() => setShowVersionDrawer(true)}
+                            className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                          >
+                            <FileText size={14} />
+                            View All Versions ({selectedReg.versions.length})
+                          </Button>
                       <Button variant="outline"
                         onClick={() => handleStatusChange(selectedReg._id)}
                         className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
@@ -970,10 +1044,13 @@ const RegulationManagementPlatform: React.FC = () => {
                   {currentVersionData && (
                     <div>
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold">
-                          {selectedReg.versions.length === 1 ? 'Initial Version Analysis' : 'Version Analysis & Comparison'}
-                          <p className="text-xs text-gray-500 mt-1">Previous Version upload date: {currentVersionData.uploadDate}</p>
-                        </h3>
+                        <div>
+                          <h3 className="text-lg font-semibold">
+                            {selectedReg.versions.length === 1 ? 'Initial Version Analysis' : 'Version Analysis & Comparison'}
+                          </h3>
+                          <p className="text-xs text-gray-500 mt-1">Upload date: {currentVersionData.uploadDate}</p>
+                          
+                        </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
                             Current: {currentVersionData.version}{currentVersionData.title ? ` - ${currentVersionData.title}` : ''}
@@ -1156,22 +1233,190 @@ const RegulationManagementPlatform: React.FC = () => {
               Are you sure you want to delete <strong>{selectedReg?.title}</strong>? This action cannot be undone and will permanently remove all versions and associated data.
             </p>
             <div className="flex gap-3">
-              <button
+              <Button
+              variant={"destructive"}
                 onClick={() => {
                   if (selectedReg?._id) {
                     handleDelete(selectedReg._id);
                   }
                 }}
-                className="flex-1 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="flex-1 py-2"
               >
                 Delete Regulation
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 py-2 border rounded hover:bg-gray-50"
+                className="flex-1 py-2"
               >
                 Cancel
-              </button>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Version Management Drawer */}
+      <Sheet open={showVersionDrawer} onOpenChange={setShowVersionDrawer}>
+        <SheetContent side="right" className="w-[500px] sm:w-[640px]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <FileText size={20} />
+              Version Management
+            </SheetTitle>
+            <SheetDescription>
+              Manage all versions of <strong>{selectedReg?.title}</strong>
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="mt-6 space-y-3">
+            {selectedReg?.versions.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <FileText size={48} className="mx-auto mb-4 text-gray-400" />
+                <p>No versions available</p>
+              </div>
+            ) : (
+              selectedReg?.versions.map((version, index) => (
+                <div key={version.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-medium text-gray-900">
+                          {version.version}
+                        </h4>
+                        
+                        
+                      </div>
+                      
+                      {version.title && (
+                        <p className="text-sm font-medium text-gray-700 mb-2">{version.title}</p>
+                      )}
+                    
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <div className="flex items-center gap-1">
+                        {index === 0 && (
+                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                            Latest
+                          </span>
+                        )}
+                        {index === (selectedReg?.versions.length ?? 1) - 1 && selectedReg?.versions.length > 1 && (
+                          <span className="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">
+                            Baseline
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar size={14} />
+                        <span>{new Date(version.uploadDate).toLocaleDateString()} {new Date(version.uploadDate).toLocaleTimeString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <FileIcon size={14} />
+                        <span>File: {version.fileName}</span>
+                      </div>
+                      {version.detailedChanges && (
+                        <div className="flex items-center gap-1">
+                          <Info size={14} />
+                          <span>{version.detailedChanges.length} changes detected</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {/* Set as comparison base button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedVersion(version.id);
+                        setShowVersionDrawer(false);
+                      }}
+                      className={`text-xs ${selectedVersion === version.id || (selectedVersion === 'latest' && index === 0) 
+                        ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                        : ''}`}
+                    >
+                      {selectedVersion === version.id || (selectedVersion === 'latest' && index === 0) 
+                        ? 'Viewing' 
+                        : 'View'}
+                    </Button>
+                    
+                    {/* Three dots menu for actions */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical size={14} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedVersion(version.id);
+                            setShowVersionDrawer(false);
+                          }}
+                        >
+                          <FileText size={14} className="mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                        {/* Only show delete for latest version when there are multiple versions */}
+                        {index === 0 && selectedReg.versions.length > 1 && (
+                          <DropdownMenuItem
+                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                            onClick={() => {
+                              setShowDeleteVersionModal(true);
+                              setShowVersionDrawer(false);
+                            }}
+                          >
+                            <Trash2 size={14} className="mr-2" />
+                            Delete Version
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </div>
+              ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+      
+      {/* Delete Version Modal */}
+      {showDeleteVersionModal && currentVersionData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-lg font-semibold mb-4 text-red-600">Delete Version</h2>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete the latest version <strong>{currentVersionData.version}{currentVersionData.title ? ` - ${currentVersionData.title}` : ''}</strong>? 
+              This action cannot be undone and will permanently remove this version and all its analysis data.
+            </p>
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4 rounded">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} className="text-yellow-600" />
+                <p className="text-yellow-800 text-sm">
+                  After deletion, the previous version will become the latest version.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (currentVersionData?.id) {
+                    handleDeleteVersion(currentVersionData.id);
+                  }
+                }}
+                className="flex-1 py-2"
+              >
+                Delete Version
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteVersionModal(false)}
+                className="flex-1 py-2"
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         </div>
