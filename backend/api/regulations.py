@@ -10,6 +10,7 @@ import shutil
 from db.mongo import regulation_collection
 from llm.chains import analyze_pdfs
 from schemas.regulations import ChangeStatusUpdate
+from schemas.regulations import RegulationCommentCreate
 from services.s3 import s3_client, s3_bucket
 
 UPLOAD_DIR = Path("uploads")
@@ -224,3 +225,32 @@ async def delete_regulation(reg_id: str):
     except Exception as e:
         logging.exception("Failed to delete regulation")
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post("/regulations/{reg_id}/comments")
+async def add_comment(reg_id: str, body: RegulationCommentCreate):
+    reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
+
+    if not reg_doc:
+        raise HTTPException(status_code=404, detail="Regulation not found")
+    
+    new_comment = {
+        "username": body.username,
+        "comment": body.comment,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    try:
+        regulation_collection.update_one(
+            {"_id": ObjectId(reg_id)},
+            {
+                "$push": {"comments": new_comment}
+            }
+        )
+
+        return {"message": "New comment added", "comment": new_comment}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={
+            "error": str(e),
+            "details": "Failed to add new comment"
+        })
