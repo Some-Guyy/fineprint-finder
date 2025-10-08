@@ -696,14 +696,39 @@ const RegulationManagementPlatform: React.FC = () => {
   };
 
   // delete regulation
-  const handleDelete = (regId: string) => {
-    if (window.confirm('Are you sure you want to delete this regulation?')) {
-      setRegulations(prev => prev.filter(reg => reg._id !== regId));
-      setSelectedRegulation(null);
-      setShowDeleteModal(false);
-      console.log(selectedReg?._id)
-      alert('Regulation deleted successfully.');
+  const handleDelete = async (regId: string) => {
+    if (!selectedReg) return;
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:9000/regulations/${regId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Failed to delete change:", errorData.detail || response.statusText);
+        alert("Failed to delete change. Please try again. Error: " + errorData.detail);
+        return;
+
+      } else {
+        const returnedResponse = await response.json();
+        alert(returnedResponse.message);
+        setRegulations(prev => prev.filter(reg => reg._id !== regId));
+        setSelectedRegulation(null);
+        setShowDeleteModal(false);
+      }
+
+    } catch (error) {
+      console.error("Error deleting regulation:", error);
+      alert("Error deleting change. Please try again.");
     }
+
   };
   
 
