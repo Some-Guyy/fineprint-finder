@@ -356,6 +356,7 @@ const RegulationManagementPlatform: React.FC = () => {
   const [selectedRegulation, setSelectedRegulation] = useState<string | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<string>('latest');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingChangeId, setEditingChangeId] = useState<string | null>(null);
   const [editedChanges, setEditedChanges] = useState<{ [key: string]: DetailedChange }>({});
   const [newTitle, setNewTitle] = useState('');
@@ -481,14 +482,6 @@ const RegulationManagementPlatform: React.FC = () => {
     ));
     // Simulate email notification
     alert('Email notification sent to team regarding status change.');
-  };
-
-  // delete regulation
-  const handleDelete = (regId: string) => {
-    if (window.confirm('Are you sure you want to delete this regulation?')) {
-      setRegulations(prev => prev.filter(reg => reg._id !== regId));
-      setSelectedRegulation(null);
-    }
   };
 
   // add brand new regulation
@@ -713,6 +706,17 @@ const RegulationManagementPlatform: React.FC = () => {
     }
   };
 
+  // delete regulation
+  const handleDelete = (regId: string) => {
+    if (window.confirm('Are you sure you want to delete this regulation?')) {
+      setRegulations(prev => prev.filter(reg => reg._id !== regId));
+      setSelectedRegulation(null);
+      setShowDeleteModal(false);
+      console.log(selectedReg?._id)
+      alert('Regulation deleted successfully.');
+    }
+  };
+  
   // Handle delete change
   const handleDeleteChange = async (changeId: string) => {
     if (!selectedReg || !currentVersionData) return;
@@ -938,13 +942,13 @@ const RegulationManagementPlatform: React.FC = () => {
                         <Mail size={14} />
                         {selectedReg.status === 'pending' ? 'Validate' : 'Mark Pending'}
                       </Button>
-                      <Button variant="outline"
-                        onClick={() => handleDelete(selectedReg._id)}
+                      <button
+                        onClick={() => setShowDeleteModal(true)}
                         className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-red-50 text-red-600"
                       >
                         <Trash2 size={14} />
                         Delete
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1193,6 +1197,34 @@ const RegulationManagementPlatform: React.FC = () => {
                   Cancel
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h2 className="text-lg font-semibold mb-4 text-red-600">Delete Regulation</h2>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete <strong>{selectedReg?.title}</strong>? This action cannot be undone and will permanently remove all versions and associated data.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  if (selectedReg?._id) {
+                    handleDelete(selectedReg._id);
+                  }
+                }}
+                className="flex-1 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete Regulation
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-2 border rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
