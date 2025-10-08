@@ -44,7 +44,6 @@ const DetailedChangesView: React.FC<{
   changes: DetailedChange[];
   onEdit: (changeId: string) => void;
   onStatusChange: (changeId: string, status: 'relevant' | 'not-relevant') => void;
-  onDelete: (changeId: string) => void;
   onAddComment: (changeId: string, content: string) => void;
   editingChangeId: string | null;
   editedChanges: { [key: string]: DetailedChange };
@@ -52,7 +51,7 @@ const DetailedChangesView: React.FC<{
   tempStatus: { [key: string]: 'relevant' | 'not-relevant' };
   setTempStatus: React.Dispatch<React.SetStateAction<{ [key: string]: 'relevant' | 'not-relevant' }>>;
   statusFilter?: 'all' | 'relevant' | 'pending' | 'not-relevant';
-}> = ({ changes, onEdit, onStatusChange, onDelete, onAddComment, editingChangeId, editedChanges, setEditedChanges, tempStatus, setTempStatus, statusFilter = 'all' }) => {
+}> = ({ changes, onEdit, onStatusChange, onAddComment, editingChangeId, editedChanges, setEditedChanges, tempStatus, setTempStatus, statusFilter = 'all' }) => {
   const [expandedChanges, setExpandedChanges] = useState<Set<string>>(new Set());
   const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
 
@@ -224,17 +223,7 @@ const DetailedChangesView: React.FC<{
                     <Edit3 size={14} />
                     {isEditing ? 'Save' : 'Edit'}
                   </Button>
-                  <Button variant="outline"
-                    onClick={() => {
-                      if (window.confirm('Are you sure you want to delete this change? This action cannot be undone.')) {
-                        onDelete(change.id);
-                      }
-                    }}
-                    className="flex items-center gap-1 px-3 py-1 text-sm border border-red-300 rounded hover:bg-red-50 text-red-600"
-                  >
-                    <Trash2 size={14} />
-                    Delete
-                  </Button>
+                  
                 </div>
               </div>
             </div>
@@ -717,72 +706,6 @@ const RegulationManagementPlatform: React.FC = () => {
     }
   };
   
-  // Handle delete change
-  const handleDeleteChange = async (changeId: string) => {
-    if (!selectedReg || !currentVersionData) return;
-
-    try {
-      // Call backend API to delete the change
-
-      // TODO update the endpoint according to backend
-      const response = await fetch(
-        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Failed to delete change:", errorData.detail || response.statusText);
-        alert("Failed to delete change. Please try again.");
-        return;
-      }
-
-      // Update local state after successful backend deletion
-      setRegulations(prev =>
-        prev.map(reg =>
-          reg._id === selectedReg._id
-            ? {
-              ...reg,
-              versions: reg.versions.map(v =>
-                v.id === currentVersionData?.id
-                  ? {
-                    ...v,
-                    detailedChanges: v.detailedChanges?.filter(dc => dc.id !== changeId) || [],
-                  }
-                  : v
-              ),
-            }
-            : reg
-        )
-      );
-
-      // Clear any editing state for the deleted change
-      if (editingChangeId === changeId) {
-        setEditingChangeId(null);
-        setEditedChanges(prev => {
-          const newState = { ...prev };
-          delete newState[changeId];
-          return newState;
-        });
-      }
-
-      // Clear any temp status for the deleted change
-      setTempStatus(prev => {
-        const newState = { ...prev };
-        delete newState[changeId];
-        return newState;
-      });
-
-    } catch (error) {
-      console.error("Error deleting change:", error);
-      alert("Error deleting change. Please try again.");
-    }
-  };
 
   // Handle add comment to change
   const handleAddComment = async (changeId: string, content: string) => {
@@ -1074,7 +997,6 @@ const RegulationManagementPlatform: React.FC = () => {
                             changes={currentVersionData.detailedChanges}
                             onEdit={handleEditChange}
                             onStatusChange={handleChangeStatusUpdate}
-                            onDelete={handleDeleteChange}
                             onAddComment={handleAddComment}
                             editingChangeId={editingChangeId}
                             editedChanges={editedChanges}
