@@ -138,7 +138,7 @@ async def update_change_status(
     if not reg_doc:
         raise HTTPException(status_code=404, detail="Regulation not found")
     
-     # Find version by id
+    # Find version by id
     version = next((v for v in reg_doc['versions'] if v['id'] == version_id), None)
     if not version:
         raise HTTPException(status_code=404, detail=f"Version {version_id} not found")
@@ -226,12 +226,27 @@ async def delete_regulation(reg_id: str):
         logging.exception("Failed to delete regulation")
         raise HTTPException(status_code=500, detail=str(e))
     
-@router.post("/regulations/{reg_id}/comments")
-async def add_comment(reg_id: str, body: ChangeCommentCreate):
+@router.post("/regulations/{reg_id}/versions/{version_id}/changes/{change_id}/comments")
+async def add_comment(
+    reg_id: str,
+    version_id: str,
+    change_id: str,
+    body: ChangeCommentCreate
+):
     reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
 
     if not reg_doc:
         raise HTTPException(status_code=404, detail="Regulation not found")
+    
+    # Find version by id
+    version = next((v for v in reg_doc['versions'] if v['id'] == version_id), None)
+    if not version:
+        raise HTTPException(status_code=404, detail=f"Version {version_id} not found")
+
+    # Find change by id
+    change = next((c for c in version.get('detailedChanges', []) if c['id'] == change_id), None)
+    if not change:
+        raise HTTPException(status_code=404, detail=f"Change {change_id} not found")
     
     new_comment = {
         "username": body.username,
@@ -243,11 +258,14 @@ async def add_comment(reg_id: str, body: ChangeCommentCreate):
         regulation_collection.update_one(
             {"_id": ObjectId(reg_id)},
             {
-                "$push": {"comments": new_comment}
-            }
+                "$push": {
+                    "versions.$[v].detailedChanges.$[c].comments": new_comment
+                }
+            },
+            array_filters=[{"v.id": version_id}, {"c.id": change_id}]
         )
 
-        return {"message": "New comment added", "comment": new_comment}
+        return {"message": "Comment added", "comment": new_comment}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail={
