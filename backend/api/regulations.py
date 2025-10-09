@@ -10,6 +10,7 @@ import shutil
 from db.mongo import regulation_collection
 from llm.chains import analyze_pdfs
 from schemas.regulations import ChangeStatusUpdate
+from schemas.regulations import ChangeCommentCreate
 from services.s3 import s3_client, s3_bucket
 
 UPLOAD_DIR = Path("uploads")
@@ -137,7 +138,7 @@ async def update_change_status(
     if not reg_doc:
         raise HTTPException(status_code=404, detail="Regulation not found")
     
-     # Find version by id
+    # Find version by id
     version = next((v for v in reg_doc['versions'] if v['id'] == version_id), None)
     if not version:
         raise HTTPException(status_code=404, detail=f"Version {version_id} not found")
@@ -161,3 +162,114 @@ async def update_change_status(
     )
 
     return {"message": "Change status updated", "status": new_status}
+
+# Delete version
+@router.delete("/regulations/{reg_id}/versions/{version_id}")
+async def delete_regulation_version(reg_id: str, version_id: str):
+
+    try:
+        reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
+        if not reg_doc:
+            raise HTTPException(status_code=404, detail="Regulation not found")
+        
+        version = next((v for v in reg_doc["versions"] if v["id"] == version_id), None)
+        if not version:
+            raise HTTPException(status_code=404, detail=f"Version {version_id} not found")
+
+        # Delete from S3
+        try:
+            s3_client.delete_object(Bucket=s3_bucket, Key=version["s3Key"])
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to delete from S3: {str(e)}")
+
+        # Remove version from MongoDB
+        regulation_collection.update_one(
+            {"_id": ObjectId(reg_id)},
+            {"$pull": {"versions": {"id": version_id}}}
+        )
+
+        return {"message": f"Version {version_id} deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to delete version")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.delete("/regulations/{reg_id}")
+async def delete_regulation(reg_id: str):
+    try:
+        reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
+        if not reg_doc:
+            raise HTTPException(status_code=404, detail="Regulation not found")
+
+        # Get all s3 keys to loop through and delete 
+        s3_keys = [v["s3Key"] for v in reg_doc.get("versions", []) if "s3Key" in v]
+
+        if s3_keys:
+            try:
+                s3_client.delete_objects(
+                    Bucket=s3_bucket,
+                    Delete={"Objects": [{"Key": key} for key in s3_keys]}
+                )
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to delete S3 objects: {str(e)}")
+
+        # Remove regulation from MongoDB
+        regulation_collection.delete_one({"_id": ObjectId(reg_id)})
+
+        return {"message": f"Regulation '{reg_doc['title']}' and all its versions deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to delete regulation")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post("/regulations/{reg_id}/versions/{version_id}/changes/{change_id}/comments")
+async def add_comment(
+    reg_id: str,
+    version_id: str,
+    change_id: str,
+    body: ChangeCommentCreate
+):
+    reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
+
+    if not reg_doc:
+        raise HTTPException(status_code=404, detail="Regulation not found")
+    
+    # Find version by id
+    version = next((v for v in reg_doc['versions'] if v['id'] == version_id), None)
+    if not version:
+        raise HTTPException(status_code=404, detail=f"Version {version_id} not found")
+
+    # Find change by id
+    change = next((c for c in version.get('detailedChanges', []) if c['id'] == change_id), None)
+    if not change:
+        raise HTTPException(status_code=404, detail=f"Change {change_id} not found")
+    
+    new_comment = {
+        "id": f"v{len(change['comments']) + 1}",
+        "username": body.username,
+        "comment": body.comment,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    try:
+        regulation_collection.update_one(
+            {"_id": ObjectId(reg_id)},
+            {
+                "$push": {
+                    "versions.$[v].detailedChanges.$[c].comments": new_comment
+                }
+            },
+            array_filters=[{"v.id": version_id}, {"c.id": change_id}]
+        )
+
+        return {"message": "Comment added", "comment": new_comment}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail={
+            "error": str(e),
+            "details": "Failed to add new comment"
+        })

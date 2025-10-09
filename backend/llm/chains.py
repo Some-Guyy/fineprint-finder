@@ -14,7 +14,7 @@ SYSTEM_MSG = (
                 "but if the segmentation appears misaligned, adjust slightly."
 )
 
-MODEL = "sonar-pro"
+MODEL = "sonar"
 
 
 @traceable(run_type="chain")
@@ -159,4 +159,15 @@ def analyze_pdfs(before_key: str, after_key: str):
     
     content = comparison(before_doc_text, after_doc_text, before_range, after_range)
 
-    return json.loads(content)
+    # Add pending status and comments array per change
+    try:
+        change_list = json.loads(content)
+        for change in change_list:
+            change.update({'status': "pending", 'comments': []})
+        
+        return change_list
+    except json.JSONDecodeError as e:
+        return {
+            "error": "Invalid JSON format",
+            "details": str(e)
+        }
