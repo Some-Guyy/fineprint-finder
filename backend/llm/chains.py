@@ -14,7 +14,7 @@ SYSTEM_MSG = (
                 "but if the segmentation appears misaligned, adjust slightly."
 )
 
-MODEL = "sonar-pro"
+MODEL = "sonar"
 
 
 @traceable(run_type="chain")

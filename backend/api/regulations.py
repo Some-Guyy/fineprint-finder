@@ -249,6 +249,7 @@ async def add_comment(
         raise HTTPException(status_code=404, detail=f"Change {change_id} not found")
     
     new_comment = {
+        "id": f"v{len(change['comments']) + 1}",
         "username": body.username,
         "comment": body.comment,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")

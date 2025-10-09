@@ -47,9 +47,10 @@ interface DetailedChange {
 }
 
 interface Comment {
+  changeId: string;
   id: string;
-  author: string;
-  content: string;
+  username: string;
+  comment: string;
   timestamp: string;
 }
 
@@ -312,10 +313,10 @@ const DetailedChangesView: React.FC<{
                     {(change.comments || []).map((comment) => (
                       <div key={comment.id} className="border-l-4 border-blue-500 pl-4 py-2 bg-gray-50 rounded">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm">{comment.author}</span>
+                          <span className="font-medium text-sm">{comment.username}</span>
                           <span className="text-xs text-gray-500">{comment.timestamp}</span>
                         </div>
-                        <p className="text-gray-700 text-sm">{comment.content}</p>
+                        <p className="text-gray-700 text-sm">{comment.comment}</p>
                       </div>
                     ))}
                   </div>
@@ -521,7 +522,7 @@ const RegulationManagementPlatform: React.FC = () => {
         version: newVersionTitle,
         lastUpdated: new Date().toISOString().split('T')[0],
         status: 'pending',
-        versions: []
+        versions: [],
       };
 
       setRegulations((prev) => [...prev, newReg]);
@@ -793,56 +794,82 @@ const RegulationManagementPlatform: React.FC = () => {
     }
   };
 
-  
-
   // Handle add comment to change
   const handleAddComment = async (changeId: string, content: string) => {
-    if (!selectedReg || !currentVersionData || !content.trim()) return;
+    if (!selectedReg || !content.trim() || !currentVersionData) return;
 
     try {
-      // Create new comment
+      const versionIndex = selectedReg.versions.findIndex(v => v.id === currentVersionData!.id);
+      const changeIndex = currentVersionData.detailedChanges?.findIndex(dc => dc.id === changeId);
+
+      if (versionIndex === -1 || changeIndex === undefined || changeIndex === -1) {
+        console.error("Version index or change index not found");
+        return;
+      }
+
+      const now = new Date();
+      const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+      
+      // Create local comment object for optimistic update
       const newComment: Comment = {
-        id: Date.now().toString(), // Simple ID generation - in production, this should come from backend
-        author: 'Current User', // In production, this should come from authentication
-        content: content.trim(),
-        timestamp: new Date().toLocaleString()
+        changeId: changeId,
+        id: Date.now().toString(), // Temporary ID for UI
+        username: 'Current User',    // Replace with actual user from auth
+        comment: content.trim(),
+        timestamp: timestamp,
       };
 
-      // Update local state
-      setRegulations(prev =>
-        prev.map(reg =>
-          reg._id === selectedReg._id
-            ? {
-                ...reg,
-                versions: reg.versions.map(v =>
-                  v.id === currentVersionData?.id
-                    ? {
-                        ...v,
-                        detailedChanges: v.detailedChanges?.map(dc =>
-                          dc.id === changeId 
-                            ? { ...dc, comments: [...(dc.comments || []), newComment] }
-                            : dc
-                        ) || [],
-                      }
-                    : v
-                ),
-              }
-            : reg
-        )
+      // --- Send to backend ---
+      const response = await fetch(
+        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}/comments`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: 'Current User',          // Replace with actual username
+            comment: content.trim(),
+          }),
+        }
       );
 
-      // TODO: Call backend API to save the comment
-      // const response = await fetch(`http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}/comments`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ content: content.trim() })
-      // });
+      if (!response.ok) {
+        throw new Error(`Failed to add comment: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Comment added successfully:', data);
+
+      // Update local state to reflect the new comment
+      setRegulations(prev => prev.map(reg =>
+        reg._id === selectedReg._id
+          ? {
+              ...reg,
+              versions: reg.versions.map(v =>
+                v.id === currentVersionData?.id
+                  ? {
+                      ...v,
+                      detailedChanges: v.detailedChanges?.map(dc =>
+                        dc.id === changeId
+                          ? {
+                              ...dc,
+                              comments: [...(dc.comments || []), newComment]
+                            }
+                          : dc
+                      ) || []
+                    }
+                  : v
+              )
+            }
+          : reg
+      ));
 
     } catch (error) {
-      console.error("Error adding comment:", error);
-      alert("Error adding comment. Please try again.");
+      console.error('Error adding comment:', error);
+      alert('Error adding comment. Please try again.');
     }
   };
+
 
   return (
 
