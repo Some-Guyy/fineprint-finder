@@ -10,7 +10,7 @@ import shutil
 from db.mongo import regulation_collection
 from llm.chains import analyze_pdfs
 from schemas.regulations import ChangeStatusUpdate
-from schemas.regulations import RegulationCommentCreate
+from schemas.regulations import ChangeCommentCreate
 from services.s3 import s3_client, s3_bucket
 
 UPLOAD_DIR = Path("uploads")
@@ -227,7 +227,7 @@ async def delete_regulation(reg_id: str):
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.post("/regulations/{reg_id}/comments")
-async def add_comment(reg_id: str, body: RegulationCommentCreate):
+async def add_comment(reg_id: str, body: ChangeCommentCreate):
     reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
 
     if not reg_doc:
