@@ -78,23 +78,23 @@ def extract_pdf_text(file_stream):
     return "\n\n".join(pages_text), total_pages
 
 
-if __name__ == "__main__":
-    # 🔧 Hardcode your PDF path here
-    pdf_path = "eu_cookie_new.pdf"
+# if __name__ == "__main__":
+#     # 🔧 Hardcode your PDF path here
+#     pdf_path = "eu_cookie_new.pdf"
 
-    if not os.path.exists(pdf_path):
-        print(f"Error: File '{pdf_path}' not found.")
-        exit(1)
+#     if not os.path.exists(pdf_path):
+#         print(f"Error: File '{pdf_path}' not found.")
+#         exit(1)
 
-    print(f"Processing: {pdf_path}")
+#     print(f"Processing: {pdf_path}")
 
-    with open(pdf_path, "rb") as f:
-        doc_text, total_pages = extract_pdf_text(f)
+#     with open(pdf_path, "rb") as f:
+#         doc_text, total_pages = extract_pdf_text(f)
 
-    print(f"Total pages detected: {total_pages}\n")
-    print("Running segmentation with GPT...\n")
+#     print(f"Total pages detected: {total_pages}\n")
+#     print("Running segmentation with GPT...\n")
 
 
-    result = segmentation(doc_text, total_pages)
-    enacting = next(s for s in result.segments if s.name == "Enacting terms")  # raises StopIteration if not found [web:29][web:38]
-    print([enacting.start, enacting.end])  # simple attribute access [web:25][web:22]
+#     result = segmentation(doc_text, total_pages)
+#     enacting = next(s for s in result.segments if s.name == "Enacting terms")  # raises StopIteration if not found [web:29][web:38]
+#     print([enacting.start, enacting.end])  # simple attribute access [web:25][web:22]
