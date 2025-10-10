@@ -90,15 +90,25 @@ def analyze_pdfs(before_key: str, after_key: str):
     before_range = segmentation(before_text, before_total)
     after_range = segmentation(after_text, after_total)
     # Run comparison
-    return comparison(before_text, after_text, before_range, after_range)
+    changes =  comparison(before_text, after_text, before_range, after_range)
+    if isinstance(changes, tuple):
+        changes = changes[0]
+
+    # Now response is ChangeList
+    changes_list = []
+    for idx, change in enumerate(changes.changes, start=1):
+        change.id = f"change-{idx}"                 # assign sequential IDs
+        changes_list.append(change.model_dump())    # convert Pydantic object to dict
+
+    return changes_list
 
 # -----------------------
 # Main
 # -----------------------
-if __name__ == "__main__":
-    before_key = "2025-10-09_15:27:19_eu_cookie_old.pdf"
-    after_key = "2025-10-09_15:27:31_eu_cookie_new.pdf"
+# if __name__ == "__main__":
+#     before_key = "2025-10-09_15:27:19_eu_cookie_old.pdf"
+#     after_key = "2025-10-09_15:27:31_eu_cookie_new.pdf"
 
     
-    changes_json = analyze_pdfs(before_key, after_key)
-    print(changes_json)
+#     changes_json = analyze_pdfs(before_key, after_key)
+#     print(json.dumps(changes_json, indent=2, ensure_ascii=False))
