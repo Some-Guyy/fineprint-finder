@@ -273,3 +273,53 @@ async def add_comment(
             "error": str(e),
             "details": "Failed to add new comment"
         })
+
+# Update changes from user
+@router.put("/regulations/{reg_id}/versions/{version_id}/changes/{change_id}/edit")
+async def update_single_change(reg_id: str, version_id: str, change_id: str, updated_fields: dict):
+    try:
+        # Get regulation document
+        reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
+        if not reg_doc:
+            raise HTTPException(status_code=404, detail="Regulation not found")
+
+        # Find version
+        version = next((v for v in reg_doc["versions"] if v["id"] == version_id), None)
+        if not version:
+            raise HTTPException(status_code=404, detail=f"Version {version_id} not found")
+
+        # Find the specific change
+        change = next((c for c in version.get("detailedChanges", []) if c["id"] == change_id), None)
+        if not change:
+            raise HTTPException(status_code=404, detail=f"Change {change_id} not found")
+
+        # Only allow these fields to be updated
+        allowed_fields = {"summary", "analysis", "change", "before_quote", "after_quote"}
+        filtered_updates = {k: v for k, v in updated_fields.items() if k in allowed_fields}
+
+        # Merge updates into existing change
+        updated_change = {**change, **filtered_updates}
+        updated_change["status"] = "pending"  # Reset status
+
+        regulation_collection.update_one(
+            {"_id": ObjectId(reg_id)},
+            {
+                "$set": {
+                    "versions.$[v].detailedChanges.$[c]": updated_change,
+                    "lastUpdated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+            },
+            array_filters=[{"v.id": version_id}, {"c.id": change_id}]
+        )
+
+        return {
+            "message": f"Change {change_id} updated successfully and reset to pending",
+            "updated_fields": filtered_updates,
+            "status": "pending"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception("Failed to update single change")
+        raise HTTPException(status_code=500, detail=str(e))
