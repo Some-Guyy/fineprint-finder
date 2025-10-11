@@ -163,7 +163,7 @@ async def update_change_status(
 
     return {"message": "Change status updated", "status": new_status}
 
-# Delete version
+# Delete regulation version
 @router.delete("/regulations/{reg_id}/versions/{version_id}")
 async def delete_regulation_version(reg_id: str, version_id: str):
 
@@ -195,7 +195,8 @@ async def delete_regulation_version(reg_id: str, version_id: str):
     except Exception as e:
         logging.exception("Failed to delete version")
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+# delete regulation
 @router.delete("/regulations/{reg_id}")
 async def delete_regulation(reg_id: str):
     try:
@@ -225,7 +226,8 @@ async def delete_regulation(reg_id: str):
     except Exception as e:
         logging.exception("Failed to delete regulation")
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+# add comments
 @router.post("/regulations/{reg_id}/versions/{version_id}/changes/{change_id}/comments")
 async def add_comment(
     reg_id: str,
@@ -274,7 +276,7 @@ async def add_comment(
             "details": "Failed to add new comment"
         })
 
-# Update changes from user
+# Update LLm analysis
 @router.put("/regulations/{reg_id}/versions/{version_id}/changes/{change_id}/edit")
 async def update_single_change(reg_id: str, version_id: str, change_id: str, updated_fields: dict):
     try:
