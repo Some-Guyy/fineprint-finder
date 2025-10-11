@@ -11,7 +11,7 @@ SYSTEM_MSG = (
     "Title, Preamble, Enacting terms, Annexes. Return ONLY JSON per schema."
 )
 
-MODEL = "sonar-pro"
+MODEL = "sonar"
 
 
 @traceable(run_type="chain")
