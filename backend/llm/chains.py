@@ -1,12 +1,16 @@
 import os
 import io
 import json
+from pathlib import Path
 from pydantic import BaseModel, Field, ValidationError
 from llm.segmentation import segmentation, extract_pdf_text
 from openai import OpenAI
 from langsmith import traceable
 from services.s3 import s3_client, s3_bucket
 from typing import List
+
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 MODEL = "gpt-5-mini"
@@ -71,24 +75,30 @@ Do NOT include explanations or extra text.
     return response.output_parsed
 
 
-
-
-
 # -----------------------
 # PDF Analyze function
 # -----------------------
-def analyze_pdfs(before_key: str, after_key: str):
-    before_pdf_obj = s3_client.get_object(Bucket=s3_bucket, Key=before_key)
-    after_pdf_obj = s3_client.get_object(Bucket=s3_bucket, Key=after_key)
-    before_pdf_stream = io.BytesIO(before_pdf_obj["Body"].read())
-    after_pdf_stream = io.BytesIO(after_pdf_obj["Body"].read())
+def analyze_pdfs(before_key: str, after_path: str):
 
-    before_text, before_total = extract_pdf_text(before_pdf_stream)
-    after_text, after_total = extract_pdf_text(after_pdf_stream)
+    # get before
+    before_obj = s3_client.get_object(Bucket=s3_bucket, Key=before_key)
+    before_stream = io.BytesIO(before_obj["Body"].read())
+
+    # get after
+    after_file = Path(after_path)
+    if not after_file.exists():
+        raise FileNotFoundError(f"Local file not found: {after_path}")
+    
+    with open(after_file, "rb") as f:
+        after_stream = io.BytesIO(f.read())
+    
+    before_text, before_total = extract_pdf_text(before_stream)
+    after_text, after_total = extract_pdf_text(after_stream)
 
     # Get enacting_terms page ranges from segmentation
     before_range = segmentation(before_text, before_total)
     after_range = segmentation(after_text, after_total)
+
     # Run comparison
     changes =  comparison(before_text, after_text, before_range, after_range)
     if isinstance(changes, tuple):
