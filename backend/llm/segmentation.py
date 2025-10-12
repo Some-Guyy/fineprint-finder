@@ -1,24 +1,34 @@
 import os
 import json
 import pdfplumber
-from perplexity import Perplexity
+from openai import OpenAI
 from langsmith import traceable
+from pydantic import BaseModel
+from typing import List
 
-client = Perplexity(api_key=os.environ.get("PERPLEXITY_API_KEY"))
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 SYSTEM_MSG = (
     "You are a legal-document structuring assistant. Identify page ranges of the four core segments of regulation pdfs: "
     "Title, Preamble, Enacting terms, Annexes. Return ONLY JSON per schema."
 )
 
-MODEL = "sonar"
+MODEL = "gpt-5-mini"  # or "gpt-4o" / "gpt-5"
+
+class Segment(BaseModel):
+    name: str
+    start: int | None
+    end: int | None
+
+class SegmentationResult(BaseModel):
+    segments: List[Segment]
 
 
 @traceable(run_type="chain")
-def segmentation(doc_text,total_pages):
+def segmentation(doc_text, total_pages):
     user_msg = (
-        "Given the regulation pdf text,look through all the pages and segment the text accordingly"
-        f"regulation pdf text:{doc_text}\n\n"
+        "Given the regulation pdf text, look through all the pages and segment the text accordingly.\n"
+        f"Regulation pdf text:\n{doc_text}\n\n"
         "Detection rules:\n"
         "- Title: formal title block at the start (institution line, act type, number/date, subject). "
         "Stop before the first ‘Having regard to’ line if present.\n"
@@ -40,75 +50,25 @@ def segmentation(doc_text,total_pages):
         '  "annexes": [start, end]\n'
         "}"
     )
-    pages_schema = {
-    "type": "object",
-    "properties": {
-        "title": {
-            "type": "array",
-            "items": {"anyOf": [
-                {"type": "integer", "minimum": 1, "maximum": total_pages},
-                {"type": "null"}
-            ]},
-            "minItems": 2,
-            "maxItems": 2,
-        },
-        "preamble": {
-            "type": "array",
-            "items": {"anyOf": [
-                {"type": "integer", "minimum": 1, "maximum": total_pages},
-                {"type": "null"}
-            ]},
-            "minItems": 2,
-            "maxItems": 2,
-        },
-        "enacting_terms": {
-            "type": "array",
-            "items": {"anyOf": [
-                {"type": "integer", "minimum": 1, "maximum": total_pages},
-                {"type": "null"}
-            ]},
-            "minItems": 2,
-            "maxItems": 2,
-        },
-        "annexes": {
-            "type": "array",
-            "items": {"anyOf": [
-                {"type": "integer", "minimum": 1, "maximum": total_pages},
-                {"type": "null"}
-            ]},
-            "minItems": 2,
-            "maxItems": 2,
-        },
-    },
-    "required": ["title", "preamble", "enacting_terms", "annexes"],
-    "additionalProperties": False,
-  }
 
-    messages = [
-        {"role": "system", "content": SYSTEM_MSG},
-        {"role": "user", "content": user_msg},
-    ]
 
-    completion = client.chat.completions.create(
+    response = client.responses.parse(
         model=MODEL,
-        temperature=0,
-        messages=messages,
-        response_format={"type": "json_schema", "json_schema": {"schema": pages_schema}},
+        input=[
+            {"role": "system", "content": SYSTEM_MSG},
+            {"role": "user", "content": user_msg},
+        ],
+        text_format=SegmentationResult,
     )
+    result = response.output_parsed
+    enacting = next(s for s in result.segments if s.name == "Enacting terms")  # raises StopIteration if not found [web:29][web:38]
+    return [enacting.start,enacting.end]
 
-    # safer way to access response
-    content = completion.choices[0].message.content
-    if not content:
-        raise RuntimeError("Empty response from model. Check file size/type or increase max_tokens.")
-
-    obj = json.loads(content)
-    return json.dumps(obj, indent=2, ensure_ascii=False)
 
 
 def extract_pdf_text(file_stream):
     """Extract text per page from a PDF stream, returns a string with page markers and total page count."""
     pages_text = []
-    # reset stream pointer to start, in case it's already been read
     file_stream.seek(0)
     with pdfplumber.open(file_stream) as pdf:
         total_pages = len(pdf.pages)
@@ -116,3 +76,25 @@ def extract_pdf_text(file_stream):
             text = page.extract_text() or ""
             pages_text.append(f"[Page {i}]\n{text}")
     return "\n\n".join(pages_text), total_pages
+
+
+# if __name__ == "__main__":
+#     # 🔧 Hardcode your PDF path here
+#     pdf_path = "eu_cookie_new.pdf"
+
+#     if not os.path.exists(pdf_path):
+#         print(f"Error: File '{pdf_path}' not found.")
+#         exit(1)
+
+#     print(f"Processing: {pdf_path}")
+
+#     with open(pdf_path, "rb") as f:
+#         doc_text, total_pages = extract_pdf_text(f)
+
+#     print(f"Total pages detected: {total_pages}\n")
+#     print("Running segmentation with GPT...\n")
+
+
+#     result = segmentation(doc_text, total_pages)
+#     enacting = next(s for s in result.segments if s.name == "Enacting terms")  # raises StopIteration if not found [web:29][web:38]
+#     print([enacting.start, enacting.end])  # simple attribute access [web:25][web:22]

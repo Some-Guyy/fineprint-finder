@@ -1,173 +1,114 @@
 import os
 import io
 import json
+from pydantic import BaseModel, Field, ValidationError
 from llm.segmentation import segmentation, extract_pdf_text
-from perplexity import Perplexity
+from openai import OpenAI
 from langsmith import traceable
-
 from services.s3 import s3_client, s3_bucket
-client = Perplexity(api_key=os.environ.get("PERPLEXITY_API_KEY"))
+from typing import List
+
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+MODEL = "gpt-5-mini"
 
 SYSTEM_MSG = (
-                "You are a legal expert. Compare regulation PDFs across defined segments. "
-                "Use the segmentation JSON as guidance for which pages to read, "
-                "but if the segmentation appears misaligned, adjust slightly."
+    "You are a legal expert. Compare regulation PDFs across defined segments. "
+    "Use the segmentation JSON as guidance for which pages to read, "
+    "but if the segmentation appears misaligned, adjust slightly."
 )
 
-MODEL = "sonar"
+# -----------------------
+# Pydantic Schema
+# -----------------------
+class Change(BaseModel):
+    id: str
+    summary: str
+    analysis: str
+    change: str
+    before_quote: str
+    after_quote: str
+    type: str
+    confidence: float
+    classification: str  # new field
+    status: str = "pending"
+    comments: List[str] = Field(default_factory=list)
 
+class ChangeList(BaseModel):
+    changes: List[Change]
 
+# -----------------------
+# Comparison function
+# -----------------------
 @traceable(run_type="chain")
-def comparison(before_text,after_text,before_range,after_range):
+def comparison(before_text: str, after_text: str, before_range, after_range):
+    user_msg = f"""
+User:
+Compare the enacting terms of two PDFs. give me ALL the changes found in the page range.
+Before PDF page range: {before_range}
+After PDF page range: {after_range}
+Before PDF text: {before_text}
+After PDF text: {after_text}
 
-    output_schema = {
-    "type": "array",
-    "items": {
-        "type": "object",
-        "properties": {
-            "id": {
-                "type": "string",
-                "pattern": "^change-[0-9]+$"
-            },
-            "summary": {
-                "type": "string",
-                "minLength": 1
-            },
-            "analysis": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 1000
-            },
-            "change": {
-                "type": "string",
-                "minLength": 1
-            },
-            "before_quote": {
-                "type": "string",
-                "minLength": 1
-            },
-            "after_quote": {
-                "type": "string",
-                "minLength": 1
-            },
-            "type": {
-                "type": "string",
-                "enum": [
-                    "addition",
-                    "deletion",
-                    "modification",
-                    "renumbering",
-                    "scope change",
-                    "threshold change",
-                    "definition change",
-                    "reference update",
-                    "timeline change",
-                    "penalty change",
-                    "procedural change",
-                    "unchanged"
-                ]
-            },
-            "confidence": {
-                "type": "number",
-                "minimum": 0.0,
-                "maximum": 1.0
-            }
-        },
-        "required": [
-            "id",
-            "summary",
-            "analysis",
-            "change",
-            "before_quote",
-            "after_quote",
-            "type",
-            "confidence"
-        ],
-        "additionalProperties": False
-    }
-}
-    
-    user_msg = f"""User:
-    You are given the page ranges of the enacting term of the respective pdfs compare them and look for changes that compliance teams will need to know:
+For each change, output:
+- id: change-1, change-2, etc.
+- summary: one sentence
+- analysis: 2–4 sentences
+- change: description
+- before_quote: text with page number
+- after_quote: text with page number
+- type: one of addition, deletion, modification, renumbering, scope change, threshold change, definition change, reference update, timeline change, penalty change, procedural change, unchanged
+- classification: one of Personal Identifiable information handling, Data transfers, Cloud data usage, Others
+- confidence: float 0.0–1.0
+Do NOT include explanations or extra text.
+"""
 
-    Before pdf:{before_text}
-    Before pdf page range {before_range}
-    After pdf:{after_text}
-    After pdf page range:{after_range}
-    Output:
-    For each change found respond with ONLY a JSON array (no extra text) and each array element must be a JSON object with these fields:
-    - id (string, must increment sequentially: change-1, change-2, …)
-    - summary (string, one sentence in plain language)
-    - analysis (string, 2–4 sentences on implications, scope, who is affected)
-    - change (string, precise description of the edit)
-    - before_quote (string, exact excerpt + page number of before pdf)
-    - after_quote (string, exact excerpt + page number of after pdf)
-    - type (string, one of: addition | deletion | modification | renumbering | scope change | threshold change | definition change | reference update | timeline change | penalty change | procedural change | unchanged)
-    - confidence (float, 0.00–1.00)
-
-    Rules:
-    - Your ENTIRE response must be a JSON array
-    - Do NOT include explanations, markdown, or text outside the JSON.
-    - Do NOT add comments or keys that are not listed.
-
-    Method:
-    Extract and align sections by titles/numbering; note renumbering if applicable.
-    For each aligned or unmatched section, detect substantive edits; ignore cosmetic edits.
-    Prefer 2–6 sentence evidence quotes per side.
-
-    Also include:
-    - Unchanged sections: list ids/titles with brief reason.
-    - Potentially related edits: cross-references, global metadata (title, effective date, jurisdiction).
-
-    Format:
-    Only a list containing JSON arrays containing those same fields for each change entry.
-    """
-    
-    messages = [
-        {"role": "system", "content": SYSTEM_MSG},
-        {"role": "user", "content": user_msg},
-    ]
-
-    completion = client.chat.completions.create(
+    response = client.responses.parse(
         model=MODEL,
-        temperature=0,
-        messages=messages,
-        response_format={"type": "json_schema", "json_schema": {"schema": output_schema}},
+        input=[{"role": "system", "content": SYSTEM_MSG},
+               {"role": "user", "content": user_msg}],
+        text_format=ChangeList
     )
-
-    content = completion.choices[0].message.content
-    if not content:
-        raise RuntimeError("Empty response from model. Check file size/type or increase max_tokens.")
-
-    obj = json.loads(content)
-    return json.dumps(obj, indent=2, ensure_ascii=False)
+    return response.output_parsed
 
 
+
+
+
+# -----------------------
+# PDF Analyze function
+# -----------------------
 def analyze_pdfs(before_key: str, after_key: str):
     before_pdf_obj = s3_client.get_object(Bucket=s3_bucket, Key=before_key)
     after_pdf_obj = s3_client.get_object(Bucket=s3_bucket, Key=after_key)
     before_pdf_stream = io.BytesIO(before_pdf_obj["Body"].read())
     after_pdf_stream = io.BytesIO(after_pdf_obj["Body"].read())
-    
-    # Get segmentation for both PDFs
-    before_doc_text, before_total_pages = extract_pdf_text(before_pdf_stream)
-    after_doc_text, after_total_pages = extract_pdf_text(after_pdf_stream)
-    
-    # Extract text and label them
-    before_range = json.loads(segmentation(before_doc_text, before_total_pages))["enacting_terms"]
-    after_range = json.loads(segmentation(after_doc_text, after_total_pages))["enacting_terms"]
-    
-    content = comparison(before_doc_text, after_doc_text, before_range, after_range)
 
-    # Add pending status and comments array per change
-    try:
-        change_list = json.loads(content)
-        for change in change_list:
-            change.update({'status': "pending", 'comments': []})
-        
-        return change_list
-    except json.JSONDecodeError as e:
-        return {
-            "error": "Invalid JSON format",
-            "details": str(e)
-        }
+    before_text, before_total = extract_pdf_text(before_pdf_stream)
+    after_text, after_total = extract_pdf_text(after_pdf_stream)
+
+    # Get enacting_terms page ranges from segmentation
+    before_range = segmentation(before_text, before_total)
+    after_range = segmentation(after_text, after_total)
+    # Run comparison
+    changes =  comparison(before_text, after_text, before_range, after_range)
+    if isinstance(changes, tuple):
+        changes = changes[0]
+
+    # Now response is ChangeList
+    changes_list = []
+    for idx, change in enumerate(changes.changes, start=1):
+        change.id = f"change-{idx}"                 # assign sequential IDs
+        changes_list.append(change.model_dump())    # convert Pydantic object to dict
+
+    return changes_list
+
+# -----------------------
+# Main
+# -----------------------
+# if __name__ == "__main__":
+#     before_key = "2025-10-09_15:27:19_eu_cookie_old.pdf"
+#     after_key = "2025-10-09_15:27:31_eu_cookie_new.pdf"
+
+    
+#     changes_json = analyze_pdfs(before_key, after_key)
+#     print(json.dumps(changes_json, indent=2, ensure_ascii=False))
