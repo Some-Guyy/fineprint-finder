@@ -42,13 +42,6 @@ def segmentation(doc_text, total_pages):
         "Anchoring evidence (internal): For each segment, locate at least one boundary anchor near the start and one near the end "
         "(examples: ‘Having regard to’, ‘Whereas’, ‘HAVE ADOPTED THIS DIRECTIVE/REGULATION’, ‘Article 1’, ‘Annex I’). "
         "Use these anchors to determine page transitions; if an exact anchor is not found, return [null,null] for that segment.\n\n"
-        "Output strictly as JSON per schema; no extra text:\n"
-        "{\n"
-        '  "title": [start, end],\n'
-        '  "preamble": [start, end],\n'
-        '  "enacting_terms": [start, end],\n'
-        '  "annexes": [start, end]\n'
-        "}"
     )
 
 

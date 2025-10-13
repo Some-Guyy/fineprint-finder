@@ -563,6 +563,7 @@ const RegulationManagementPlatform: React.FC = () => {
       });
 
       const data = await res.json();
+      console.log(data)
       if (!res.ok) {
         const errorMessage =
           data.detail && typeof data.detail === 'object' && 'details' in data.detail
@@ -787,8 +788,8 @@ const RegulationManagementPlatform: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Failed to delete change:", errorData.detail || response.statusText);
-        alert("Failed to delete change. Please try again. Error: " + errorData.detail);
+        console.error("Failed to delete regulation:", errorData.detail || response.statusText);
+        alert("Failed to delete regulation. Please try again. Error: " + errorData.detail);
         return;
 
       } else {
