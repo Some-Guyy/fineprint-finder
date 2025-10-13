@@ -596,35 +596,92 @@ const RegulationManagementPlatform: React.FC = () => {
   // Editing changes
   const handleEditChange = async (changeId: string) => {
     if (editingChangeId === changeId) {
-      // Save the edited change
+      // SAVE MODE - if we're already editing this change
       const editedChange = editedChanges[changeId];
       const newStatus = tempStatus[changeId];
       const change = currentVersionData?.detailedChanges?.find(dc => dc.id === changeId);
 
-      if (editedChange && selectedReg && currentVersionData) {
-        // Update content locally
-        setRegulations(prev => prev.map(reg =>
-          reg._id === selectedReg._id
-            ? {
-              ...reg,
-              versions: reg.versions.map(v =>
-                v.id === currentVersionData!.id
-                  ? {
-                    ...v,
-                    detailedChanges: v.detailedChanges?.map(dc =>
-                      dc.id === changeId ? editedChange : dc
-                    ) || []
-                  }
-                  : v
-              )
-            }
-            : reg
-        ));
-      }
+      if (editedChange && selectedReg && currentVersionData && change) {
+        try {
+          // Prepare the fields that have changed
+          const updatedFields: any = {};
+          
+          if (editedChange.summary !== change.summary) updatedFields.summary = editedChange.summary;
+          if (editedChange.analysis !== change.analysis) updatedFields.analysis = editedChange.analysis;
+          if (editedChange.change !== change.change) updatedFields.change = editedChange.change;
+          if (editedChange.before_quote !== change.before_quote) updatedFields.before_quote = editedChange.before_quote;
+          if (editedChange.after_quote !== change.after_quote) updatedFields.after_quote = editedChange.after_quote;
 
-      // Handle status change if there's a new status
-      if (newStatus && change && newStatus !== change.status) {
-        await handleChangeStatusUpdate(changeId, newStatus);
+          // If there are text field changes, send them to backend
+          if (Object.keys(updatedFields).length > 0) {
+            const response = await fetch(
+              `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}/edit`,
+              {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedFields),
+              }
+            );
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.detail || 'Failed to update change');
+            }
+
+            const responseData = await response.json();
+            console.log('Change updated successfully:', responseData);
+
+            // Create user-friendly field names for the alert
+            const fieldNames: { [key: string]: string } = {
+              summary: 'Summary',
+              analysis: 'Analysis',
+              change: 'Change Description',
+              before_quote: 'Before Text',
+              after_quote: 'After Text'
+            };
+
+            const updatedFieldNames = Object.keys(updatedFields)
+              .map(field => fieldNames[field] || field)
+              .join(', ');
+
+            // Update local state with the edited change and reset status to pending
+            setRegulations(prev => prev.map(reg =>
+              reg._id === selectedReg._id
+                ? {
+                  ...reg,
+                  versions: reg.versions.map(v =>
+                    v.id === currentVersionData!.id
+                      ? {
+                        ...v,
+                        detailedChanges: v.detailedChanges?.map(dc =>
+                          dc.id === changeId ? { ...editedChange, status: 'pending' } : dc
+                        ) || []
+                      }
+                      : v
+                  )
+                }
+                : reg
+            ));
+
+            // Show success alert
+            alert(`Successfully updated: ${updatedFieldNames}\n\nThis change has been reset to "Pending Review" status.`);
+          }
+
+          // Handle status change if there's a new status (and no text changes, or after text changes)
+          if (newStatus && change && newStatus !== change.status) {
+            await handleChangeStatusUpdate(changeId, newStatus);
+          } else if (Object.keys(updatedFields).length === 0 && (!newStatus || newStatus === change.status)) {
+            // No changes made at all
+            alert('No changes were made to save.');
+          }
+
+        } catch (error) {
+          console.error('Error updating change:', error);
+          alert(`Error updating change: ${error}`);
+          return; // Don't clean up editing state if there was an error
+        }
       }
 
       // Clean up editing state
@@ -640,7 +697,7 @@ const RegulationManagementPlatform: React.FC = () => {
         return newTemp;
       });
     } else {
-      // Start editing
+      // EDIT MODE - start editing this change
       const change = currentVersionData?.detailedChanges?.find(dc => dc.id === changeId);
       if (change) {
         setEditedChanges(prev => ({ ...prev, [changeId]: { ...change } }));
