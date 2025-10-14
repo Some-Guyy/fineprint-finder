@@ -120,12 +120,7 @@ async def add_regulation_version(reg_id: str, version: str = Body(...), file: Up
 
 # Change status of a change
 @router.put("/regulations/{reg_id}/versions/{version_id}/changes/{change_id}")
-async def update_change_status(
-    reg_id: str,
-    version_id: str,
-    change_id: str,
-    body: ChangeStatusUpdate
-):
+async def update_change_status(reg_id: str, version_id: str, change_id: str, body: ChangeStatusUpdate):
     reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
 
     if not reg_doc:
@@ -222,12 +217,7 @@ async def delete_regulation(reg_id: str):
 
 # add comments
 @router.post("/regulations/{reg_id}/versions/{version_id}/changes/{change_id}/comments")
-async def add_comment(
-    reg_id: str,
-    version_id: str,
-    change_id: str,
-    body: ChangeCommentCreate
-):
+async def add_comment(reg_id: str, version_id: str, change_id: str, body: ChangeCommentCreate):
     reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
 
     if not reg_doc:
