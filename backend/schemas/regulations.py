@@ -13,3 +13,4 @@ class ChangeDetailsUpdate(BaseModel):
     change: str
     before_quote: str
     after_quote: str
+    classification: str
