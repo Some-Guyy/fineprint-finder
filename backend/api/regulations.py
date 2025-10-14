@@ -11,6 +11,7 @@ from db.mongo import regulation_collection
 from llm.chains import analyze_pdfs
 from schemas.regulations import ChangeStatusUpdate
 from schemas.regulations import ChangeCommentCreate
+from schemas.regulations import ChangeDetailsUpdate
 from services.s3 import s3_client, s3_bucket
 
 UPLOAD_DIR = Path("uploads")
@@ -270,7 +271,7 @@ async def add_comment(
 
 # Update LLm analysis
 @router.put("/regulations/{reg_id}/versions/{version_id}/changes/{change_id}/edit")
-async def update_single_change(reg_id: str, version_id: str, change_id: str, updated_fields: dict):
+async def update_single_change(reg_id: str, version_id: str, change_id: str, body: ChangeDetailsUpdate):
     try:
         # Get regulation document
         reg_doc = regulation_collection.find_one({"_id": ObjectId(reg_id)})
@@ -286,13 +287,11 @@ async def update_single_change(reg_id: str, version_id: str, change_id: str, upd
         change = next((c for c in version.get("detailedChanges", []) if c["id"] == change_id), None)
         if not change:
             raise HTTPException(status_code=404, detail=f"Change {change_id} not found")
-
-        # Only allow these fields to be updated
-        allowed_fields = {"summary", "analysis", "change", "before_quote", "after_quote"}
-        filtered_updates = {k: v for k, v in updated_fields.items() if k in allowed_fields}
+        
+        updates = body.model_dump()
 
         # Merge updates into existing change
-        updated_change = {**change, **filtered_updates}
+        updated_change = {**change, **updates}
         updated_change["status"] = "pending"  # Reset status
 
         regulation_collection.update_one(
@@ -308,7 +307,7 @@ async def update_single_change(reg_id: str, version_id: str, change_id: str, upd
 
         return {
             "message": f"Change {change_id} updated successfully and reset to pending",
-            "updated_fields": filtered_updates,
+            "updated_fields": updates,
             "status": "pending"
         }
 

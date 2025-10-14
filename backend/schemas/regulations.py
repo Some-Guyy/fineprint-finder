@@ -6,3 +6,10 @@ class ChangeStatusUpdate(BaseModel):
 class ChangeCommentCreate(BaseModel):
     username: str
     comment: str
+
+class ChangeDetailsUpdate(BaseModel):
+    summary: str
+    analysis: str
+    change: str
+    before_quote: str
+    after_quote: str
