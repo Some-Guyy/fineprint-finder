@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class ChangeStatusUpdate(BaseModel):
     new_status: str
@@ -8,9 +9,9 @@ class ChangeCommentCreate(BaseModel):
     comment: str
 
 class ChangeDetailsUpdate(BaseModel):
-    summary: str
-    analysis: str
-    change: str
-    before_quote: str
-    after_quote: str
-    classification: str
+    summary: Optional[str] = None
+    analysis: Optional[str] = None
+    change: Optional[str] = None
+    before_quote: Optional[str] = None
+    after_quote: Optional[str] = None
+    classification: Optional[str] = None

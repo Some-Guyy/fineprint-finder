@@ -63,6 +63,7 @@ For each change, output:
 - type: one of addition, deletion, modification, renumbering, scope change, threshold change, definition change, reference update, timeline change, penalty change, procedural change, unchanged
 - classification: one of Personal Identifiable information handling, Data transfers, Cloud data usage, Others
 - confidence: float 0.0–1.0
+- status: "pending"
 Do NOT include explanations or extra text.
 """
 
@@ -109,6 +110,7 @@ def analyze_pdfs(before_key: str, after_path: str):
     for idx, change in enumerate(changes.changes, start=1):
         change.id = f"change-{idx}"                 # assign sequential IDs
         changes_list.append(change.model_dump())    # convert Pydantic object to dict
+        change.status = "pending"
 
     return changes_list
 

@@ -278,7 +278,7 @@ async def update_single_change(reg_id: str, version_id: str, change_id: str, bod
         if not change:
             raise HTTPException(status_code=404, detail=f"Change {change_id} not found")
         
-        updates = body.model_dump()
+        updates = body.model_dump(exclude_none=True)
 
         # Merge updates into existing change
         updated_change = {**change, **updates}

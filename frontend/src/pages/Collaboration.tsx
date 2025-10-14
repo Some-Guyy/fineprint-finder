@@ -43,6 +43,7 @@ interface DetailedChange {
   type: string;
   confidence: number;
   status?: 'pending' | 'relevant' | 'not-relevant';
+  classification?: 'Personal Identifiable Information Handling' | 'Data Transfers' | 'Cloud Data Usage' | 'Others';
   comments?: Comment[];
 }
 
@@ -169,7 +170,31 @@ const DetailedChangesView: React.FC<{
                       Confidence: {(change.confidence * 100).toFixed(0)}%
                     </span>
                   </div>
-
+                  
+                  <div className="mb-2">
+                    <h5 className="font-medium mb-2 mt-6">Classification of Change</h5>
+                    {isEditing ? (
+                      <select
+                        value={editedChange.classification || 'Others'}
+                        onChange={(e) => handleFieldChange(change.id, 'classification', e.target.value)}
+                        className="w-full max-w-xs p-2 border rounded text-sm bg-white"
+                      >
+                        <option value="Personal Identifiable Information Handling">Personal Identifiable Information Handling</option>
+                        <option value="Data Transfers">Data Transfers</option>
+                        <option value="Cloud Data Usage">Cloud Data Usage</option>
+                        <option value="Others">Others</option>
+                      </select>
+                    ) : (
+                      <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                        change.classification === 'Personal Identifiable Information Handling' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                        change.classification === 'Data Transfers' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
+                        change.classification === 'Cloud Data Usage' ? 'bg-cyan-100 text-cyan-800 border border-cyan-200' :
+                        'bg-gray-100 text-gray-800 border border-gray-200'
+                      }`}>
+                        {change.classification || 'Others'}
+                      </span>
+                    )}
+                  </div>
 
                   <h5 className="font-medium mb-2">Summary</h5>
                   {isEditing ? (
@@ -404,7 +429,14 @@ const RegulationManagementPlatform: React.FC = () => {
 
             // Fallback to sorting by upload date if version parsing fails
             return new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime();
-          })
+          }).map(v => ({
+            ...v,
+            detailedChanges: v.detailedChanges?.map(change => ({
+              ...change,
+              // Ensure status is explicitly set to 'pending' if undefined
+              status: change.status || 'pending'
+            }))
+          }))
         }));
 
         setRegulations(sortedData);
@@ -477,7 +509,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
 
 
-  // console.log(selectedReg)
+  console.log(selectedReg)
   // console.log(currentVersionData)
 
   // Change from pending to verified or vice versa for whole
@@ -572,13 +604,34 @@ const RegulationManagementPlatform: React.FC = () => {
         throw new Error(errorMessage);
       }
 
-      const updatedRegulations = regulations.map((reg) =>
-        reg._id === selectedReg?._id
-          ? { ...reg, versions: [data.version, ...reg.versions] }
-          : reg
-      );
-
-      setRegulations(updatedRegulations);
+      // Refetch the entire regulation to get the updated versions list
+      const refetchRes = await fetch(`http://127.0.0.1:9000/regulations`);
+      if (refetchRes.ok) {
+        const refetchedData = await refetchRes.json();
+        
+        // Sort versions within each regulation
+        const sortedData = refetchedData.map((regulation: Regulation) => ({
+          ...regulation,
+          versions: [...regulation.versions].sort((a, b) => {
+            const versionA = parseFloat(a.version);
+            const versionB = parseFloat(b.version);
+            if (!isNaN(versionA) && !isNaN(versionB)) {
+              return versionB - versionA;
+            }
+            return new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime();
+          }).map(v => ({
+            ...v,
+            detailedChanges: v.detailedChanges?.map(change => ({
+              ...change,
+              // Ensure status is explicitly set to 'pending' if undefined
+              status: change.status || 'pending'
+            }))
+          }))
+        }));
+        
+        setRegulations(sortedData);
+      }
+      
       setNewFile(null);
       setUpdateVersionTitle("");
 
@@ -594,7 +647,7 @@ const RegulationManagementPlatform: React.FC = () => {
     }
   };
 
-  // Editing changes
+  // Edit change analysis
   const handleEditChange = async (changeId: string) => {
     if (editingChangeId === changeId) {
       // SAVE MODE - if we're already editing this change
@@ -612,6 +665,7 @@ const RegulationManagementPlatform: React.FC = () => {
           if (editedChange.change !== change.change) updatedFields.change = editedChange.change;
           if (editedChange.before_quote !== change.before_quote) updatedFields.before_quote = editedChange.before_quote;
           if (editedChange.after_quote !== change.after_quote) updatedFields.after_quote = editedChange.after_quote;
+          if (editedChange.classification !== change.classification) updatedFields.classification = editedChange.classification;
 
           // If there are text field changes, send them to backend
           if (Object.keys(updatedFields).length > 0) {
@@ -640,7 +694,8 @@ const RegulationManagementPlatform: React.FC = () => {
               analysis: 'Analysis',
               change: 'Change Description',
               before_quote: 'Before Text',
-              after_quote: 'After Text'
+              after_quote: 'After Text',
+              classification: 'Classification of Change'
             };
 
             const updatedFieldNames = Object.keys(updatedFields)
@@ -667,6 +722,7 @@ const RegulationManagementPlatform: React.FC = () => {
             ));
 
             // Show success alert
+            console.log(updatedFieldNames)
             alert(`Successfully updated: ${updatedFieldNames}\n\nThis change has been reset to "Pending Review" status.`);
           }
 

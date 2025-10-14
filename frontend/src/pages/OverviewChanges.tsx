@@ -35,6 +35,7 @@ interface DetailedChange {
   type: string;
   confidence: number;
   status?: 'pending' | 'relevant' | 'not-relevant';
+  classification?: 'Personal Identifiable Information Handling' | 'Data Transfers' | 'Cloud Data Usage' | 'Others';
 }
 
 interface Comment {
@@ -63,6 +64,7 @@ interface FilterOptions {
   statusFilter: 'all' | 'relevant' | 'pending' | 'not-relevant';
   sortBy: 'date' | 'confidence' | 'regulation' | 'type';
   sortOrder: 'asc' | 'desc';
+  selectedClassifications: string[];
 }
 
 const RelevantChangesPage: React.FC = () => {
@@ -81,7 +83,8 @@ const RelevantChangesPage: React.FC = () => {
     dateRange: [undefined, undefined],
     statusFilter: 'all', // Default to relevant changes
     sortBy: 'date',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
+    selectedClassifications: []
   });
 
   // Fetch regulations and aggregate changes
@@ -145,12 +148,19 @@ const RelevantChangesPage: React.FC = () => {
     // Search term
     if (filters.searchTerm) {
       const searchLower = filters.searchTerm.toLowerCase();
-      filtered = filtered.filter(change => 
-        change.summary.toLowerCase().includes(searchLower) ||
-        change.analysis.toLowerCase().includes(searchLower) ||
-        change.change.toLowerCase().includes(searchLower) ||
-        change.regulationTitle.toLowerCase().includes(searchLower)
-      );
+      filtered = filtered.filter(change => {
+        const summary = change.summary?.toLowerCase() || '';
+        const analysis = change.analysis?.toLowerCase() || '';
+        const changeText = change.change?.toLowerCase() || '';
+        const regulationTitle = change.regulationTitle?.toLowerCase() || '';
+
+        return (
+          summary.includes(searchLower) ||
+          analysis.includes(searchLower) ||
+          changeText.includes(searchLower) ||
+          regulationTitle.includes(searchLower)
+        );
+      });
     }
 
     // Regulation filter
@@ -164,6 +174,12 @@ const RelevantChangesPage: React.FC = () => {
     if (filters.selectedTypes.length > 0) {
       filtered = filtered.filter(change => 
         filters.selectedTypes.includes(change.type)
+      );
+    }
+
+    if (filters.selectedClassifications.length > 0) {
+      filtered = filtered.filter(change => 
+        filters.selectedClassifications.includes(change.classification || 'Others')
       );
     }
 
@@ -223,11 +239,19 @@ const RelevantChangesPage: React.FC = () => {
     return Array.from(types);
   };
 
+  const getUniqueClassifications = () => {
+    const classifications = new Set(
+      aggregatedChanges.map(change => change.classification || 'Others')
+    );
+    return Array.from(classifications);
+  };
+
   const handleExport = () => {
     const dataToExport = filteredChanges.map(change => ({
       regulation: change.regulationTitle,
       version: `${change.versionNumber}${change.versionTitle ? ` - ${change.versionTitle}` : ''}`,
       type: change.type,
+      classification: change.classification || 'Others',
       summary: change.summary,
       confidence: `${(change.confidence * 100).toFixed(0)}%`,
       status: change.status || 'pending',
@@ -357,7 +381,7 @@ const RelevantChangesPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Regulations Filter */}
               <div>
                 <label className="block text-sm font-medium mb-2">Regulations</label>
@@ -411,6 +435,35 @@ const RelevantChangesPage: React.FC = () => {
                         }}
                       />
                       {type}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Classification Filter */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Classifications</label>
+                <div className="max-h-32 overflow-y-auto border rounded-lg p-2">
+                  {getUniqueClassifications().map(classification => (
+                    <label key={classification} className="flex items-center gap-2 text-sm py-1">
+                      <input
+                        type="checkbox"
+                        checked={filters.selectedClassifications.includes(classification)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFilters(prev => ({ 
+                              ...prev, 
+                              selectedClassifications: [...prev.selectedClassifications, classification] 
+                            }));
+                          } else {
+                            setFilters(prev => ({ 
+                              ...prev, 
+                              selectedClassifications: prev.selectedClassifications.filter(c => c !== classification) 
+                            }));
+                          }
+                        }}
+                      />
+                      {classification}
                     </label>
                   ))}
                 </div>
@@ -523,7 +576,8 @@ const RelevantChangesPage: React.FC = () => {
                   dateRange: [undefined, undefined],
                   statusFilter: 'relevant',
                   sortBy: 'date',
-                  sortOrder: 'desc'
+                  sortOrder: 'desc',
+                  selectedClassifications: []
                 })}
                 className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50"
               >
@@ -588,6 +642,17 @@ const RelevantChangesPage: React.FC = () => {
                           </span>
                         </div>
                         
+                        <div className="mb-3">
+                          <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                            change.classification === 'Personal Identifiable Information Handling' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                            change.classification === 'Data Transfers' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
+                            change.classification === 'Cloud Data Usage' ? 'bg-cyan-100 text-cyan-800 border border-cyan-200' :
+                            'bg-gray-100 text-gray-800 border border-gray-200'
+                          }`}>
+                            {change.classification || 'Others'}
+                          </span>
+                        </div>
+
                         <h4 className="font-medium text-gray-900 mb-1">{change.summary}</h4>
                         
                         <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
