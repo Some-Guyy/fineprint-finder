@@ -7,3 +7,4 @@ URI = f"mongodb+srv://{db_user}:{db_pass}@fypwhere.u27axc2.mongodb.net/?retryWri
 mongo_client = MongoClient(URI)
 db = mongo_client["fypwhere"]
 regulation_collection = db["regulations"]
+user_collection = db["users"]
