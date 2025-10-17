@@ -13,6 +13,7 @@ boto3 = "*"
 pdfplumber = "*"
 openai = "*"
 langsmith = "*"
+bcrypt = "*"
 
 [dev-packages]
 

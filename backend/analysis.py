@@ -2,8 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from api.regulations import router as regulations_router
-from api.users import router as users_router
+from api.analysis import router as analysis_router
 from api.utils import router as utils_router
 from db.mongo import mongo_client
 
@@ -24,10 +23,9 @@ app.add_middleware(
 def startup_db_client():
     try:
         mongo_client.admin.command("ping")
-        print("MongoDB connection successful from main service")
+        print("MongoDB connection successful from analysis service")
     except Exception as e:
-        print("MongoDB connection failed from main service:", e)
+        print("MongoDB connection failed from analysis service:", e)
 
-app.include_router(regulations_router)
-app.include_router(users_router)
+app.include_router(analysis_router)
 app.include_router(utils_router)
