@@ -23,9 +23,9 @@ app.add_middleware(
 def startup_db_client():
     try:
         mongo_client.admin.command("ping")
-        print("MongoDB connection successful")
+        print("MongoDB connection successful from regulations service")
     except Exception as e:
-        print("MongoDB connection failed:", e)
+        print("MongoDB connection failed from regulations service:", e)
 
 app.include_router(regulations_router)
 app.include_router(utils_router)
