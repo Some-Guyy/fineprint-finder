@@ -509,7 +509,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
 
 
-  console.log(selectedReg)
+  // console.log(selectedReg)
   // console.log(currentVersionData)
 
   // Change from pending to verified or vice versa for whole
@@ -589,7 +589,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
       const regId = selectedReg?._id;
 
-      const res = await fetch(`http://127.0.0.1:9000/regulations/${regId}/versions`, {
+      const res = await fetch(`http://127.0.0.1:9001/regulations/${regId}/versions`, {
         method: "POST",
         body: formData,
       });
