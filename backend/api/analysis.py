@@ -5,7 +5,7 @@ from pathlib import Path
 from bson import ObjectId
 import shutil
 
-from db.mongo import regulation_collection
+from db.mongo import regulation_collection, notification_collection
 from llm.chains import analyze_pdfs
 from services.s3 import s3_client, s3_bucket
 
@@ -58,6 +58,14 @@ async def add_regulation_version(reg_id: str, version: str = Body(...), file: Up
                 "$set": {"lastUpdated": upload_date, "status": "pending"}
             },
         )
+        
+        notif = {
+            "title": f"New Version Added: {reg_doc['title']}",
+            "message": f"A new version ({version}) has been added to the regulation '{reg_doc['title']}'.",
+            "created_at": datetime.now(),
+            "seen": []
+        }
+        notification_collection.insert_one(notif)
 
         return {"message": "Version added successfully", "version": new_version}
 
