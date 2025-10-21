@@ -8,3 +8,4 @@ mongo_client = MongoClient(URI)
 db = mongo_client["fypwhere"]
 regulation_collection = db["regulations"]
 user_collection = db["users"]
+notification_collection = db["notifications"]
