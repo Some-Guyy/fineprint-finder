@@ -58,15 +58,7 @@ async def create_regulation(title: str = Body(...), version: str = Body(...), fi
         }
         result = regulation_collection.insert_one(doc)
         
-        notif = {
-            "title": f"New Regulation Tracked: {title}",
-            "message": f"A new regulation '{title}' has been added for tracking (version {version}).",
-            "created_at": datetime.now(),
-            "seen": []
-        }
-        notification_collection.insert_one(notif)
-        
-        return {"id": str(result.inserted_id), "message": "Regulation and notification created"}
+        return {"id": str(result.inserted_id), "message": "Regulation created"}
     
     except Exception as e:
         logging.exception("Failed to create regulation")
