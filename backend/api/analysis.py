@@ -63,7 +63,7 @@ async def add_regulation_version(reg_id: str, version: str = Body(...), file: Up
             "title": f"New Version Added: {reg_doc['title']}",
             "message": f"A new version ({version}) has been added to the regulation '{reg_doc['title']}'.",
             "created_at": datetime.now(),
-            "seen": []
+            "seen_by": []
         }
         notification_collection.insert_one(notif)
 
