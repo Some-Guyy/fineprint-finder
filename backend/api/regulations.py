@@ -6,8 +6,7 @@ from bson import ObjectId
 import logging
 import shutil
 
-from db.mongo import regulation_collection
-from llm.chains import analyze_pdfs
+from db.mongo import regulation_collection, notification_collection
 from schemas.regulations import ChangeStatusUpdate
 from schemas.regulations import ChangeCommentCreate
 from schemas.regulations import ChangeDetailsUpdate
@@ -58,7 +57,9 @@ async def create_regulation(title: str = Body(...), version: str = Body(...), fi
             "comments": []
         }
         result = regulation_collection.insert_one(doc)
+        
         return {"id": str(result.inserted_id), "message": "Regulation created"}
+    
     except Exception as e:
         logging.exception("Failed to create regulation")
         raise HTTPException(status_code=500, detail=str(e))
