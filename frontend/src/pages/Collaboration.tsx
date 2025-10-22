@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info, MoreVertical, Calendar, FileIcon } from 'lucide-react';
+import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info, MoreVertical, Calendar, FileIcon, Bell } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import {
   Sheet,
@@ -53,6 +53,14 @@ interface Comment {
   username: string;
   comment: string;
   timestamp: string;
+}
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  seen: boolean;
+  created_at: string;
 }
 
 const DetailedChangesView: React.FC<{
@@ -170,7 +178,7 @@ const DetailedChangesView: React.FC<{
                       Confidence: {(change.confidence * 100).toFixed(0)}%
                     </span>
                   </div>
-                  
+
                   <div className="mb-2">
                     <h5 className="font-medium mb-2 mt-6">Classification of Change</h5>
                     {isEditing ? (
@@ -185,12 +193,11 @@ const DetailedChangesView: React.FC<{
                         <option value="Others">Others</option>
                       </select>
                     ) : (
-                      <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
-                        change.classification === 'Personal Identifiable Information Handling' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
-                        change.classification === 'Data Transfers' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
-                        change.classification === 'Cloud Data Usage' ? 'bg-cyan-100 text-cyan-800 border border-cyan-200' :
-                        'bg-gray-100 text-gray-800 border border-gray-200'
-                      }`}>
+                      <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${change.classification === 'Personal Identifiable Information Handling' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                          change.classification === 'Data Transfers' ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' :
+                            change.classification === 'Cloud Data Usage' ? 'bg-cyan-100 text-cyan-800 border border-cyan-200' :
+                              'bg-gray-100 text-gray-800 border border-gray-200'
+                        }`}>
                         {change.classification || 'Others'}
                       </span>
                     )}
@@ -262,7 +269,7 @@ const DetailedChangesView: React.FC<{
                     <Edit3 size={14} />
                     {isEditing ? 'Save' : 'Edit'}
                   </Button>
-                  
+
                 </div>
               </div>
             </div>
@@ -353,7 +360,7 @@ const DetailedChangesView: React.FC<{
                       className="w-full p-3 border rounded-lg resize-none text-sm"
                       rows={2}
                     />
-                    <Button variant="secondary" 
+                    <Button variant="secondary"
                       onClick={() => {
                         const content = newComments[change.id];
                         if (content && content.trim()) {
@@ -398,9 +405,78 @@ const RegulationManagementPlatform: React.FC = () => {
   const [showDeleteVersionModal, setShowDeleteVersionModal] = useState(false);
   const [showVersionDrawer, setShowVersionDrawer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  
+  // Notification states
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  
+  // username from local storage
+  const [username, setUsername] = React.useState<string>("");
+
+  React.useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setUsername(user.username);
+    }
+  }, []);
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    if (!username) return;
+    
+    try {
+      const response = await fetch(`http://127.0.0.1:9000/notifications/?username=${username}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch notifications');
+      }
+      const data = await response.json();
+      setNotifications(data);
+      console.log(data)
+      setUnreadCount(data.filter((n: Notification) => !n.seen).length);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  };
+
+  // Mark notification as seen
+  const markNotificationAsSeen = async (notifId: string) => {
+    if (!username) return;
+
+    try {
+      const response = await fetch(`http://127.0.0.1:9000/notifications/${notifId}/seen`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+      });
+      console.log(response)
+      if (!response.ok) {
+        throw new Error('Failed to mark notification as seen');
+      }
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(n => n.id === notifId ? { ...n, seen: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Error marking notification as seen:', err);
+    }
+  };
+
+  // Fetch notifications on mount and when username changes
+  useEffect(() => {
+    if (username) {
+      fetchNotifications();
+    }
+  }, [username]);
 
   // Fetch regulations on component mount
   useEffect(() => {
+
     const fetchRegulations = async () => {
       try {
         setLoading(true);
@@ -509,7 +585,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
 
 
-  console.log(selectedReg)
+  // console.log(selectedReg)
   // console.log(currentVersionData)
 
   // Change from pending to verified or vice versa for whole
@@ -563,6 +639,10 @@ const RegulationManagementPlatform: React.FC = () => {
       setNewVersionTitle("");
       setNewFile(null);
       alert("Email notification sent to team regarding new regulation upload.");
+
+      // Refresh notifications
+      fetchNotifications();
+
     } catch (err) {
       console.error(err);
       alert("Error uploading regulation. Please try again.");
@@ -589,7 +669,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
       const regId = selectedReg?._id;
 
-      const res = await fetch(`http://127.0.0.1:9000/regulations/${regId}/versions`, {
+      const res = await fetch(`http://127.0.0.1:9001/regulations/${regId}/versions`, {
         method: "POST",
         body: formData,
       });
@@ -608,7 +688,7 @@ const RegulationManagementPlatform: React.FC = () => {
       const refetchRes = await fetch(`http://127.0.0.1:9000/regulations`);
       if (refetchRes.ok) {
         const refetchedData = await refetchRes.json();
-        
+
         // Sort versions within each regulation
         const sortedData = refetchedData.map((regulation: Regulation) => ({
           ...regulation,
@@ -628,17 +708,20 @@ const RegulationManagementPlatform: React.FC = () => {
             }))
           }))
         }));
-        
+
         setRegulations(sortedData);
       }
-      
+
       setNewFile(null);
       setUpdateVersionTitle("");
 
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
       alert("Email notification sent to team regarding new regulation version upload.");
+      fetchNotifications();
+
     } catch (err) {
       console.error(err);
       alert(err);
@@ -659,7 +742,7 @@ const RegulationManagementPlatform: React.FC = () => {
         try {
           // Prepare the fields that have changed
           const updatedFields: any = {};
-          
+
           if (editedChange.summary !== change.summary) updatedFields.summary = editedChange.summary;
           if (editedChange.analysis !== change.analysis) updatedFields.analysis = editedChange.analysis;
           if (editedChange.change !== change.change) updatedFields.change = editedChange.change;
@@ -862,7 +945,7 @@ const RegulationManagementPlatform: React.FC = () => {
     }
 
   };
-  
+
   // Delete a specific version (only latest version)
   const handleDeleteVersion = async (versionId: string) => {
     if (!selectedReg || !currentVersionData) return;
@@ -886,19 +969,19 @@ const RegulationManagementPlatform: React.FC = () => {
       } else {
         const returnedResponse = await response.json();
         alert(returnedResponse.message);
-        
+
         // Update local state by removing the deleted version
-        setRegulations(prev => prev.map(reg => 
-          reg._id === selectedReg._id 
+        setRegulations(prev => prev.map(reg =>
+          reg._id === selectedReg._id
             ? { ...reg, versions: reg.versions.filter(v => v.id !== versionId) }
             : reg
         ));
-        
+
         // Reset to latest if we deleted the currently selected version
         if (currentVersionData.id === versionId) {
           setSelectedVersion('latest');
         }
-        
+
         setShowDeleteVersionModal(false);
       }
 
@@ -924,12 +1007,12 @@ const RegulationManagementPlatform: React.FC = () => {
       const now = new Date();
       const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
-      
+
       // Create local comment object for optimistic update
       const newComment: Comment = {
         changeId: changeId,
         id: Date.now().toString(), // Temporary ID for UI
-        username: 'Current User',    // Replace with actual user from auth
+        username: username || 'Unknown User',
         comment: content.trim(),
         timestamp: timestamp,
       };
@@ -941,7 +1024,7 @@ const RegulationManagementPlatform: React.FC = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            username: 'Current User',          // Replace with actual username
+            username: username || 'Unknown User',
             comment: content.trim(),
           }),
         }
@@ -958,23 +1041,23 @@ const RegulationManagementPlatform: React.FC = () => {
       setRegulations(prev => prev.map(reg =>
         reg._id === selectedReg._id
           ? {
-              ...reg,
-              versions: reg.versions.map(v =>
-                v.id === currentVersionData?.id
-                  ? {
-                      ...v,
-                      detailedChanges: v.detailedChanges?.map(dc =>
-                        dc.id === changeId
-                          ? {
-                              ...dc,
-                              comments: [...(dc.comments || []), newComment]
-                            }
-                          : dc
-                      ) || []
-                    }
-                  : v
-              )
-            }
+            ...reg,
+            versions: reg.versions.map(v =>
+              v.id === currentVersionData?.id
+                ? {
+                  ...v,
+                  detailedChanges: v.detailedChanges?.map(dc =>
+                    dc.id === changeId
+                      ? {
+                        ...dc,
+                        comments: [...(dc.comments || []), newComment]
+                      }
+                      : dc
+                  ) || []
+                }
+                : v
+            )
+          }
           : reg
       ));
 
@@ -1005,13 +1088,72 @@ const RegulationManagementPlatform: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Nomura Regulation Management</h1>
-            <Button variant="outline"
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={20} />
-              Add New Regulation
-            </Button>
+            <div className="flex items-center gap-4">
+              {/* Notification Bell */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <Bell size={24} className="text-gray-700" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border z-50 max-h-96 overflow-y-auto">
+                    <div className="p-4 border-b">
+                      <h3 className="font-semibold text-gray-900">Notifications</h3>
+                    </div>
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">
+                        <Info size={48} className="mx-auto mb-2 text-gray-400" />
+                        <p>No notifications</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            onClick={() => {
+                              if (!notif.seen) {
+                                markNotificationAsSeen(notif.id);
+                              }
+                            }}
+                            className={`p-4 hover:bg-gray-50 cursor-pointer ${!notif.seen ? 'bg-blue-50' : ''}`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900">{notif.title}</h4>
+                                <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
+                                <p className="text-xs text-gray-500 mt-2">{notif.created_at}</p>
+                              </div>
+                              {!notif.seen && (
+                                <div className="ml-2">
+                                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <Button variant="outline"
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Plus size={20} />
+                Add New Regulation
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -1070,34 +1212,34 @@ const RegulationManagementPlatform: React.FC = () => {
                         </span>
 
                       </div>
-                        <div className="flex items-center gap-2">
-                          {selectedReg.versions.length > 1 && (
-                            <div className="flex items-center gap-2 mt-2">
-                              <label className="text-sm text-gray-600">Compare:</label>
-                              <select
-                                value={selectedVersion}
-                                onChange={(e) => setSelectedVersion(e.target.value)}
-                                className="text-sm border rounded px-2 py-1 bg-white"
-                              >
-                                <option value="latest">Latest vs Previous</option>
-                                {selectedReg.versions.map((version, index) => (
-                                  <option key={version.id} value={version.id}>
-                                    {version.version} {version.title ? `- ${version.title}` : ''} {index === 0 ? '(Latest)' : ''}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
-                        </div>
+                      <div className="flex items-center gap-2">
+                        {selectedReg.versions.length > 1 && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <label className="text-sm text-gray-600">Compare:</label>
+                            <select
+                              value={selectedVersion}
+                              onChange={(e) => setSelectedVersion(e.target.value)}
+                              className="text-sm border rounded px-2 py-1 bg-white"
+                            >
+                              <option value="latest">Latest vs Previous</option>
+                              {selectedReg.versions.map((version, index) => (
+                                <option key={version.id} value={version.id}>
+                                  {version.version} {version.title ? `- ${version.title}` : ''} {index === 0 ? '(Latest)' : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline"
-                            onClick={() => setShowVersionDrawer(true)}
-                            className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
-                          >
-                            <FileText size={14} />
-                            View All Versions ({selectedReg.versions.length})
-                          </Button>
+                        onClick={() => setShowVersionDrawer(true)}
+                        className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                      >
+                        <FileText size={14} />
+                        View All Versions ({selectedReg.versions.length})
+                      </Button>
                       <Button variant="outline"
                         onClick={() => handleStatusChange(selectedReg._id)}
                         className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
@@ -1190,7 +1332,7 @@ const RegulationManagementPlatform: React.FC = () => {
                             {selectedReg.versions.length === 1 ? 'Initial Version Analysis' : 'Version Analysis & Comparison'}
                           </h3>
                           <p className="text-xs text-gray-500 mt-1">Upload date: {currentVersionData.uploadDate}</p>
-                          
+
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
@@ -1375,7 +1517,7 @@ const RegulationManagementPlatform: React.FC = () => {
             </p>
             <div className="flex gap-3">
               <Button
-              variant={"destructive"}
+                variant={"destructive"}
                 onClick={() => {
                   if (selectedReg?._id) {
                     handleDelete(selectedReg._id);
@@ -1396,7 +1538,7 @@ const RegulationManagementPlatform: React.FC = () => {
           </div>
         </div>
       )}
-      
+
       {/* Version Management Drawer */}
       <Sheet open={showVersionDrawer} onOpenChange={setShowVersionDrawer}>
         <SheetContent side="right" className="w-[500px] sm:w-[640px]">
@@ -1409,7 +1551,7 @@ const RegulationManagementPlatform: React.FC = () => {
               Manage all versions of <strong>{selectedReg?.title}</strong>
             </SheetDescription>
           </SheetHeader>
-          
+
           <div className="mt-6 space-y-3">
             {selectedReg?.versions.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
@@ -1425,110 +1567,110 @@ const RegulationManagementPlatform: React.FC = () => {
                         <h4 className="font-medium text-gray-900">
                           {version.version}
                         </h4>
-                        
-                        
+
+
                       </div>
-                      
+
                       {version.title && (
                         <p className="text-sm font-medium text-gray-700 mb-2">{version.title}</p>
                       )}
-                    
-                    <div className="space-y-1 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        {index === 0 && (
-                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                            Latest
-                          </span>
-                        )}
-                        {index === (selectedReg?.versions.length ?? 1) - 1 && selectedReg?.versions.length > 1 && (
-                          <span className="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">
-                            Baseline
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar size={14} />
-                        <span>{new Date(version.uploadDate).toLocaleDateString()} {new Date(version.uploadDate).toLocaleTimeString()}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <FileIcon size={14} />
-                        <span>File: {version.fileName}</span>
-                      </div>
-                      {version.detailedChanges && (
+
+                      <div className="space-y-1 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
-                          <Info size={14} />
-                          <span>{version.detailedChanges.length} changes detected</span>
+                          {index === 0 && (
+                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                              Latest
+                            </span>
+                          )}
+                          {index === (selectedReg?.versions.length ?? 1) - 1 && selectedReg?.versions.length > 1 && (
+                            <span className="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">
+                              Baseline
+                            </span>
+                          )}
                         </div>
-                      )}
+                        <div className="flex items-center gap-1">
+                          <Calendar size={14} />
+                          <span>{new Date(version.uploadDate).toLocaleDateString()} {new Date(version.uploadDate).toLocaleTimeString()}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <FileIcon size={14} />
+                          <span>File: {version.fileName}</span>
+                        </div>
+                        {version.detailedChanges && (
+                          <div className="flex items-center gap-1">
+                            <Info size={14} />
+                            <span>{version.detailedChanges.length} changes detected</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {/* Set as comparison base button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedVersion(version.id);
-                        setShowVersionDrawer(false);
-                      }}
-                      className={`text-xs ${selectedVersion === version.id || (selectedVersion === 'latest' && index === 0) 
-                        ? 'bg-blue-50 border-blue-300 text-blue-700' 
-                        : ''}`}
-                    >
-                      {selectedVersion === version.id || (selectedVersion === 'latest' && index === 0) 
-                        ? 'Viewing' 
-                        : 'View'}
-                    </Button>
-                    
-                    {/* Three dots menu for actions */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical size={14} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedVersion(version.id);
-                            setShowVersionDrawer(false);
-                          }}
-                        >
-                          <FileText size={14} className="mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        {/* Only show delete for latest version when there are multiple versions */}
-                        {index === 0 && selectedReg.versions.length > 1 && (
+
+                    <div className="flex items-center gap-2">
+                      {/* Set as comparison base button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedVersion(version.id);
+                          setShowVersionDrawer(false);
+                        }}
+                        className={`text-xs ${selectedVersion === version.id || (selectedVersion === 'latest' && index === 0)
+                          ? 'bg-blue-50 border-blue-300 text-blue-700'
+                          : ''}`}
+                      >
+                        {selectedVersion === version.id || (selectedVersion === 'latest' && index === 0)
+                          ? 'Viewing'
+                          : 'View'}
+                      </Button>
+
+                      {/* Three dots menu for actions */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical size={14} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem
-                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
                             onClick={() => {
-                              setShowDeleteVersionModal(true);
+                              setSelectedVersion(version.id);
                               setShowVersionDrawer(false);
                             }}
                           >
-                            <Trash2 size={14} className="mr-2" />
-                            Delete Version
+                            <FileText size={14} className="mr-2" />
+                            View Details
                           </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          {/* Only show delete for latest version when there are multiple versions */}
+                          {index === 0 && selectedReg.versions.length > 1 && (
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                              onClick={() => {
+                                setShowDeleteVersionModal(true);
+                                setShowVersionDrawer(false);
+                              }}
+                            >
+                              <Trash2 size={14} className="mr-2" />
+                              Delete Version
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </div>
-              </div>
               ))
             )}
           </div>
         </SheetContent>
       </Sheet>
-      
+
       {/* Delete Version Modal */}
       {showDeleteVersionModal && currentVersionData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h2 className="text-lg font-semibold mb-4 text-red-600">Delete Version</h2>
             <p className="text-gray-700 mb-6">
-              Are you sure you want to delete the latest version <strong>{currentVersionData.version}{currentVersionData.title ? ` - ${currentVersionData.title}` : ''}</strong>? 
+              Are you sure you want to delete the latest version <strong>{currentVersionData.version}{currentVersionData.title ? ` - ${currentVersionData.title}` : ''}</strong>?
               This action cannot be undone and will permanently remove this version and all its analysis data.
             </p>
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4 rounded">

@@ -1,15 +1,17 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Upload, 
-  Search, 
-  Brain, 
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  Home,
+  Upload,
+  Search,
+  Brain,
   Bell,
   Activity,
-  CheckSquare
+  CheckSquare,
+  LogOut
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { Button } from './ui/button';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
@@ -22,8 +24,35 @@ const navigation = [
   // { name: 'Alerts & Settings', href: '/alerts', icon: Bell },
 ];
 
-export function Navigation() {
+interface NavigationProps {
+  setIsAuthenticated?: (value: boolean) => void;
+}
+
+export function Navigation({ setIsAuthenticated }: NavigationProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [username, setUsername] = React.useState<string>("");
+
+  React.useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setUsername(user.username);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    // Clear all stored data
+    localStorage.removeItem('user');
+
+    // Set authentication state to false
+    if (setIsAuthenticated) {
+      setIsAuthenticated(false);
+    }
+
+    // Navigate to login page
+    navigate('/login');
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b">
@@ -56,6 +85,19 @@ export function Navigation() {
                 );
               })}
             </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm font-medium text-gray-700">
+              Welcome, {username}
+            </span>
+            <Button
+              variant={"ghost"}
+              onClick={handleLogout}
+              className="inline-flex items-center px-3 py-2 text-sm font-medium space-x-2"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </Button>
           </div>
         </div>
       </div>
