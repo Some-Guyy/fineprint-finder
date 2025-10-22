@@ -433,7 +433,6 @@ const RegulationManagementPlatform: React.FC = () => {
       }
       const data = await response.json();
       setNotifications(data);
-      console.log(data)
       setUnreadCount(data.filter((n: Notification) => !n.seen).length);
     } catch (err) {
       console.error('Error fetching notifications:', err);
@@ -452,7 +451,7 @@ const RegulationManagementPlatform: React.FC = () => {
         },
         body: JSON.stringify({ username }),
       });
-      console.log(response)
+
       if (!response.ok) {
         throw new Error('Failed to mark notification as seen');
       }
@@ -642,7 +641,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
       // Refresh notifications
       fetchNotifications();
-
+      
     } catch (err) {
       console.error(err);
       alert("Error uploading regulation. Please try again.");
@@ -675,7 +674,7 @@ const RegulationManagementPlatform: React.FC = () => {
       });
 
       const data = await res.json();
-      console.log(data)
+      // console.log(data)
       if (!res.ok) {
         const errorMessage =
           data.detail && typeof data.detail === 'object' && 'details' in data.detail
