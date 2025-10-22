@@ -6,7 +6,7 @@ from bson import ObjectId
 import logging
 import shutil
 
-from db.mongo import regulation_collection, notification_collection
+from db.mongo import regulation_collection
 from schemas.regulations import ChangeStatusUpdate
 from schemas.regulations import ChangeCommentCreate
 from schemas.regulations import ChangeDetailsUpdate
