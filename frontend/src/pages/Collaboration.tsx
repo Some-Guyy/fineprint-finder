@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info, MoreVertical, Calendar, FileIcon } from 'lucide-react';
+import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info, MoreVertical, Calendar, FileIcon, Bell } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import {
   Sheet,
@@ -53,6 +53,14 @@ interface Comment {
   username: string;
   comment: string;
   timestamp: string;
+}
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  seen: boolean;
+  created_at: string;
 }
 
 const DetailedChangesView: React.FC<{
@@ -397,7 +405,12 @@ const RegulationManagementPlatform: React.FC = () => {
   const [showDeleteVersionModal, setShowDeleteVersionModal] = useState(false);
   const [showVersionDrawer, setShowVersionDrawer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
+  
+  // Notification states
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  
   // username from local storage
   const [username, setUsername] = React.useState<string>("");
 
@@ -408,6 +421,58 @@ const RegulationManagementPlatform: React.FC = () => {
       setUsername(user.username);
     }
   }, []);
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    if (!username) return;
+    
+    try {
+      const response = await fetch(`http://127.0.0.1:9000/notifications/?username=${username}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch notifications');
+      }
+      const data = await response.json();
+      setNotifications(data);
+      console.log(data)
+      setUnreadCount(data.filter((n: Notification) => !n.seen).length);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  };
+
+  // Mark notification as seen
+  const markNotificationAsSeen = async (notifId: string) => {
+    if (!username) return;
+
+    try {
+      const response = await fetch(`http://127.0.0.1:9000/notifications/${notifId}/seen`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+      });
+      console.log(response)
+      if (!response.ok) {
+        throw new Error('Failed to mark notification as seen');
+      }
+
+      // Update local state
+      setNotifications(prev =>
+        prev.map(n => n.id === notifId ? { ...n, seen: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Error marking notification as seen:', err);
+    }
+  };
+
+  // Fetch notifications on mount and when username changes
+  useEffect(() => {
+    if (username) {
+      fetchNotifications();
+    }
+  }, [username]);
 
   // Fetch regulations on component mount
   useEffect(() => {
@@ -574,6 +639,10 @@ const RegulationManagementPlatform: React.FC = () => {
       setNewVersionTitle("");
       setNewFile(null);
       alert("Email notification sent to team regarding new regulation upload.");
+
+      // Refresh notifications
+      fetchNotifications();
+
     } catch (err) {
       console.error(err);
       alert("Error uploading regulation. Please try again.");
@@ -649,7 +718,10 @@ const RegulationManagementPlatform: React.FC = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
       alert("Email notification sent to team regarding new regulation version upload.");
+      fetchNotifications();
+
     } catch (err) {
       console.error(err);
       alert(err);
@@ -1016,13 +1088,72 @@ const RegulationManagementPlatform: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Nomura Regulation Management</h1>
-            <Button variant="outline"
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={20} />
-              Add New Regulation
-            </Button>
+            <div className="flex items-center gap-4">
+              {/* Notification Bell */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <Bell size={24} className="text-gray-700" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border z-50 max-h-96 overflow-y-auto">
+                    <div className="p-4 border-b">
+                      <h3 className="font-semibold text-gray-900">Notifications</h3>
+                    </div>
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-gray-500">
+                        <Info size={48} className="mx-auto mb-2 text-gray-400" />
+                        <p>No notifications</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            onClick={() => {
+                              if (!notif.seen) {
+                                markNotificationAsSeen(notif.id);
+                              }
+                            }}
+                            className={`p-4 hover:bg-gray-50 cursor-pointer ${!notif.seen ? 'bg-blue-50' : ''}`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900">{notif.title}</h4>
+                                <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
+                                <p className="text-xs text-gray-500 mt-2">{notif.created_at}</p>
+                              </div>
+                              {!notif.seen && (
+                                <div className="ml-2">
+                                  <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <Button variant="outline"
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Plus size={20} />
+                Add New Regulation
+              </Button>
+            </div>
           </div>
         </div>
       </div>
