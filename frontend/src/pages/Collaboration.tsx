@@ -619,7 +619,7 @@ const RegulationManagementPlatform: React.FC = () => {
       formData.append("version", newVersionTitle.trim());
 
       // POST to backend
-      const res = await fetch("${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations", {
+      const res = await fetch(`${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations`, {
         method: "POST",
         body: formData,
       });
