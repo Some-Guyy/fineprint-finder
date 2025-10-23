@@ -144,7 +144,7 @@ def delete_uploaded_files(file_ids):
 # -----------------------
 # Main Analysis
 # -----------------------
-def analyze_pdfs(before_key: str, after_key: str, auto_delete=True):
+def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
     # --- Download from S3 ---
     before_obj = s3_client.get_object(Bucket=s3_bucket, Key=before_key)
     before_stream = io.BytesIO(before_obj["Body"].read())
@@ -152,10 +152,9 @@ def analyze_pdfs(before_key: str, after_key: str, auto_delete=True):
     before_upload = client.files.create(file=before_stream, purpose="assistants")
     wait_for_file(before_upload.id)
 
-    after_obj = s3_client.get_object(Bucket=s3_bucket, Key=after_key)
-    after_stream = io.BytesIO(after_obj["Body"].read())
-    after_stream.name = "after.pdf"
-    after_upload = client.files.create(file=after_stream, purpose="assistants")
+    after_file = Path(after_path)
+    with open(after_file, "rb") as f:
+        after_upload = client.files.create(file=f, purpose="assistants")
     wait_for_file(after_upload.id)
 
     uploaded_file_ids = [before_upload.id, after_upload.id]
