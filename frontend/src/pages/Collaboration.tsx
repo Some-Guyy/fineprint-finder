@@ -644,7 +644,6 @@ const RegulationManagementPlatform: React.FC = () => {
       setNewTitle("");
       setNewVersionTitle("");
       setNewFile(null);
-      alert("Email notification sent to team regarding new regulation upload.");
 
       // Refresh notifications
       fetchNotifications();
