@@ -154,7 +154,10 @@ def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
 
     after_file = Path(after_path)
     with open(after_file, "rb") as f:
-        after_upload = client.files.create(file=f, purpose="assistants")
+        after_upload = client.files.create(
+            file=("after.pdf", f),  # 👈 custom name here
+            purpose="assistants"
+        )
     wait_for_file(after_upload.id)
 
     uploaded_file_ids = [before_upload.id, after_upload.id]
