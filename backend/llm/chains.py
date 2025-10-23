@@ -176,12 +176,21 @@ def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
 
     structured = structure_changes(raw_output)
 
+    changes_list = []
+    for idx, change in enumerate(structured.changes, start=1):
+        change.id = f"change-{idx}"          # assign sequential IDs
+        change.status = "pending"            # set fixed status
+        change.comments = []                 # ensure comments field exists
+        changes_list.append(change.model_dump())  # convert Pydantic model → dict
+
+
+
     # --- Cleanup ---
     if auto_delete:
         delete_vector_store(vector_store.id)
         delete_uploaded_files(uploaded_file_ids)
 
-    return structured
+    return changes_list
 
 # -----------------------
 # Run locally
