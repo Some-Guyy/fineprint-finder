@@ -1272,7 +1272,7 @@ const RegulationManagementPlatform: React.FC = () => {
                       <Upload size={16} />
                       <span className="font-medium">Update Regulation</span>
                       {isUpdatingRegulation && (
-                        <span className="text-sm text-blue-600">Uploading...</span>
+                        <span className="text-sm text-blue-600">Uploaded, Now Analyzing...</span>
                       )}
                     </div>
 
@@ -1282,6 +1282,7 @@ const RegulationManagementPlatform: React.FC = () => {
                           <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">Processing document and analyzing changes...</p>
+                        <p className="text-sm text font-semibold text-red-400 mt-1">Please do not refresh the page!</p>
                       </div>
                     )}
 
