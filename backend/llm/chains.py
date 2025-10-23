@@ -83,8 +83,7 @@ For each change, output a JSON object with the following fields:
 - type: one of addition, deletion, modification, renumbering, scope change, threshold change, definition change, reference update, timeline change, penalty change, procedural change, unchanged
 - classification: one of Personal Identifiable Information handling, Data transfers, Cloud data usage, Others
 - confidence: a float between 0.0 and 1.0 indicating how confident you are in the identification
-- status: always "pending"
-- comments: optional list of notes or observations
+
 
 Rules:
 1. Do not include any extra text outside the JSON.
@@ -172,19 +171,17 @@ def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
     raw_output = comparison(vector_store.id)
 
     # --- Structure into Pydantic object ---
-    try:
-        structured = structure_changes(raw_output)
 
-        # --- Attach fixed fields AFTER parsing ---
-        for idx, change in enumerate(structured.changes, start=1):
-            change.id = f"change-{idx}"
-            change.status = "pending"          # fixed value
-            change.comments = []               # fixed value
+    structured = structure_changes(raw_output)
 
-        result = [c.model_dump() for c in structured.changes]
-    except Exception as e:
-        print(f"⚠️ Failed to parse structured output: {e}")
-        result = raw_output
+    # --- Attach fixed fields AFTER parsing ---
+    for idx, change in enumerate(structured.changes, start=1):
+        change.id = f"change-{idx}"
+        change.status = "pending"          # fixed value
+        change.comments = []               # fixed value
+
+    result = [c.model_dump() for c in structured.changes]
+
 
     # --- Cleanup ---
     if auto_delete:
