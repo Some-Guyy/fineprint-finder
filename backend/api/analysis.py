@@ -3,11 +3,16 @@ from fastapi import APIRouter
 from datetime import datetime
 from pathlib import Path
 from bson import ObjectId
+from dotenv import load_dotenv
 import shutil
+import os
 
-from db.mongo import regulation_collection
+from db.mongo import regulation_collection, notification_collection, user_collection
 from llm.chains import analyze_pdfs
 from services.s3 import s3_client, s3_bucket
+
+from mail.builder import EmailBuilder
+from mail.sender import EmailSender
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -58,6 +63,34 @@ async def add_regulation_version(reg_id: str, version: str = Body(...), file: Up
                 "$set": {"lastUpdated": upload_date, "status": "pending"}
             },
         )
+        
+        notif = {
+            "title": f"New Version Added: {reg_doc['title']}",
+            "message": f"A new version ({version}) has been added to the regulation '{reg_doc['title']}'.",
+            "created_at": datetime.now(),
+            "seen_by": []
+        }
+        notification_collection.insert_one(notif)
+
+        # Send email notifications as well
+        sender_address = os.getenv("SMTP_USER") # For gmail smtp, sender address is the same as smtp user
+        recipient_addresses = user_collection.distinct('email') # Use distinct in case multiple accounts same email
+        emails_to_send = []
+        
+        for i in range(len(recipient_addresses)):
+            builder = (
+                EmailBuilder()
+                .sender(sender_address)
+                .to(recipient_addresses[i])
+                .subject(f"Fineprint Finder - {notif['title']}")
+                .text(notif['message'])
+            )
+            emails_to_send.append((builder.build(), builder.get_sender(), builder.get_recipients()))
+        
+        # Send all at once
+        sender = EmailSender()
+        results = sender.send_multiple(emails_to_send)
+        print(f"Success: {len(results['success'])}, Failed: {len(results['failed'])}")
 
         return {"message": "Version added successfully", "version": new_version}
 

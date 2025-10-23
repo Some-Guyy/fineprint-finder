@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 from api.regulations import router as regulations_router
 from api.users import router as users_router
+from api.notifications import router as notifications_router
 from api.utils import router as utils_router
 from db.mongo import mongo_client
 
@@ -30,4 +31,5 @@ def startup_db_client():
 
 app.include_router(regulations_router)
 app.include_router(users_router)
+app.include_router(notifications_router)
 app.include_router(utils_router)
