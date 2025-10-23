@@ -33,6 +33,8 @@ class Change(BaseModel):
     type: str
     confidence: float
     classification: str
+    status: str = "pending"
+    comments: List[str] = Field(default_factory=list)
 
 class ChangeList(BaseModel):
     changes: List[Change]
@@ -174,21 +176,12 @@ def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
 
     structured = structure_changes(raw_output)
 
-    # --- Attach fixed fields AFTER parsing ---
-    for idx, change in enumerate(structured.changes, start=1):
-        change.id = f"change-{idx}"
-        change.status = "pending"          # fixed value
-        change.comments = []               # fixed value
-
-    result = [c.model_dump() for c in structured.changes]
-
-
     # --- Cleanup ---
     if auto_delete:
         delete_vector_store(vector_store.id)
         delete_uploaded_files(uploaded_file_ids)
 
-    return result
+    return structured
 
 # -----------------------
 # Run locally
