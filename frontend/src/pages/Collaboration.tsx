@@ -593,16 +593,6 @@ const RegulationManagementPlatform: React.FC = () => {
   // console.log(selectedReg)
   // console.log(currentVersionData)
 
-  // Change from pending to verified or vice versa for whole
-  const handleStatusChange = (regId: string) => {
-    setRegulations(prev => prev.map(reg =>
-      reg._id === regId
-        ? { ...reg, status: reg.status === 'pending' ? 'validated' : 'pending' }
-        : reg
-    ));
-    // Simulate email notification
-    alert('Email notification sent to team regarding status change.');
-  };
 
   // add brand new regulation
   const handleAddRegulation = async () => {
@@ -1186,13 +1176,6 @@ const RegulationManagementPlatform: React.FC = () => {
                       </div>
                       <p className="text-xs text-gray-500 mt-1">Updated: {regulation.lastUpdated}</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {regulation.status === 'validated' ? (
-                        <CheckCircle size={16} className="text-green-500" />
-                      ) : (
-                        <AlertCircle size={16} className="text-yellow-500" />
-                      )}
-                    </div>
                   </div>
                 </div>
               ))}
@@ -1245,20 +1228,6 @@ const RegulationManagementPlatform: React.FC = () => {
                         <FileText size={14} />
                         View All Versions ({selectedReg.versions.length})
                       </Button>
-                      <Button variant="outline"
-                        onClick={() => handleStatusChange(selectedReg._id)}
-                        className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
-                      >
-                        <Mail size={14} />
-                        {selectedReg.status === 'pending' ? 'Validate' : 'Mark Pending'}
-                      </Button>
-                      <button
-                        onClick={() => setShowDeleteModal(true)}
-                        className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-red-50 text-red-600"
-                      >
-                        <Trash2 size={14} />
-                        Delete
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -1515,7 +1484,7 @@ const RegulationManagementPlatform: React.FC = () => {
         </div>
       )}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h2 className="text-lg font-semibold mb-4 text-red-600">Delete Regulation</h2>
             <p className="text-gray-700 mb-6">
@@ -1556,6 +1525,17 @@ const RegulationManagementPlatform: React.FC = () => {
             <SheetDescription>
               Manage all versions of <strong>{selectedReg?.title}</strong>
             </SheetDescription>
+            <div className="w-fit">
+              <button
+                onClick={() => {setShowDeleteModal(true)
+                                setShowVersionDrawer(false);
+                }}
+                className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-red-50 text-red-600"
+              >
+                <Trash2 size={14} />
+                Delete Regulation
+              </button>
+            </div>
           </SheetHeader>
 
           <div className="mt-6 space-y-3">
