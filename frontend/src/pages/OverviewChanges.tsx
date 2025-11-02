@@ -6,6 +6,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popove
 import { Button } from '../components/ui/button';
 import { Slider } from '../components/ui/slider';
 
+const API_PROTOCOL = process.env.REACT_APP_API_PROTOCOL;
+const MAIN_HOST = process.env.REACT_APP_MAIN_HOST;
+const MAIN_PORT = process.env.REACT_APP_MAIN_PORT;
+
 // Import interfaces from Collaboration component
 interface Regulation {
   _id: string;
@@ -92,7 +96,7 @@ const RelevantChangesPage: React.FC = () => {
     const fetchRegulations = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://127.0.0.1:9000/regulations');
+        const response = await fetch(`${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch regulations: ${response.statusText}`);

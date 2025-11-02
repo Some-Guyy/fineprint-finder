@@ -4,6 +4,10 @@ import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router-dom";
 
+const API_PROTOCOL = process.env.REACT_APP_API_PROTOCOL;
+const MAIN_HOST = process.env.REACT_APP_MAIN_HOST;
+const MAIN_PORT = process.env.REACT_APP_MAIN_PORT;
+
 interface User {
   id: string;
   username: string;
@@ -33,7 +37,7 @@ export default function Login({ setIsAuthenticated }: LoginProps) {
     setError("");
 
     try {
-      const response = await fetch("http://127.0.0.1:9000/login", {
+      const response = await fetch(`${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

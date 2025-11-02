@@ -15,6 +15,12 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 
+const API_PROTOCOL = process.env.REACT_APP_API_PROTOCOL;
+const MAIN_HOST = process.env.REACT_APP_MAIN_HOST;
+const MAIN_PORT = process.env.REACT_APP_MAIN_PORT;
+const LLM_HOST = process.env.REACT_APP_LLM_HOST;
+const LLM_PORT = process.env.REACT_APP_LLM_PORT;
+
 interface Regulation {
   _id: string;
   title: string;
@@ -427,7 +433,7 @@ const RegulationManagementPlatform: React.FC = () => {
     if (!username) return;
     
     try {
-      const response = await fetch(`http://127.0.0.1:9000/notifications/?username=${username}`);
+      const response = await fetch(`${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/notifications/?username=${username}`);
       if (!response.ok) {
         throw new Error('Failed to fetch notifications');
       }
@@ -444,7 +450,7 @@ const RegulationManagementPlatform: React.FC = () => {
     if (!username) return;
 
     try {
-      const response = await fetch(`http://127.0.0.1:9000/notifications/${notifId}/seen`, {
+      const response = await fetch(`${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/notifications/${notifId}/seen`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -480,7 +486,7 @@ const RegulationManagementPlatform: React.FC = () => {
       try {
         setLoading(true);
 
-        const response = await fetch('http://127.0.0.1:9000/regulations');
+        const response = await fetch(`${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations`);
 
         if (!response.ok) {
           throw new Error(`Failed to fetch regulations: ${response.statusText}`);
@@ -612,7 +618,7 @@ const RegulationManagementPlatform: React.FC = () => {
       formData.append("version", newVersionTitle.trim());
 
       // POST to backend
-      const res = await fetch("http://127.0.0.1:9000/regulations", {
+      const res = await fetch(`${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations`, {
         method: "POST",
         body: formData,
       });
@@ -668,7 +674,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
       const regId = selectedReg?._id;
 
-      const res = await fetch(`http://127.0.0.1:9001/regulations/${regId}/versions`, {
+      const res = await fetch(`${API_PROTOCOL}://${LLM_HOST}:${LLM_PORT}/regulations/${regId}/versions`, {
         method: "POST",
         body: formData,
       });
@@ -684,7 +690,7 @@ const RegulationManagementPlatform: React.FC = () => {
       }
 
       // Refetch the entire regulation to get the updated versions list
-      const refetchRes = await fetch(`http://127.0.0.1:9000/regulations`);
+      const refetchRes = await fetch(`${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations`);
       if (refetchRes.ok) {
         const refetchedData = await refetchRes.json();
 
@@ -752,7 +758,7 @@ const RegulationManagementPlatform: React.FC = () => {
           // If there are text field changes, send them to backend
           if (Object.keys(updatedFields).length > 0) {
             const response = await fetch(
-              `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}/edit`,
+              `${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}/edit`,
               {
                 method: 'PUT',
                 headers: {
@@ -867,7 +873,7 @@ const RegulationManagementPlatform: React.FC = () => {
       // console.log("Frontend order:", selectedReg.versions.map(v => v.id));
 
       const response = await fetch(
-        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}`,
+        `${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}`,
         {
           method: 'PUT',
           headers: {
@@ -915,7 +921,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:9000/regulations/${regId}`,
+        `${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations/${regId}`,
         {
           method: 'DELETE',
           headers: {
@@ -951,7 +957,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${versionId}`,
+        `${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations/${selectedReg._id}/versions/${versionId}`,
         {
           method: 'DELETE',
           headers: {
@@ -1018,7 +1024,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
       // --- Send to backend ---
       const response = await fetch(
-        `http://127.0.0.1:9000/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}/comments`,
+        `${API_PROTOCOL}://${MAIN_HOST}:${MAIN_PORT}/regulations/${selectedReg._id}/versions/${currentVersionData.id}/changes/${changeId}/comments`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1265,7 +1271,7 @@ const RegulationManagementPlatform: React.FC = () => {
                       <Upload size={16} />
                       <span className="font-medium">Update Regulation</span>
                       {isUpdatingRegulation && (
-                        <span className="text-sm text-blue-600">Uploading...</span>
+                        <span className="text-sm text-blue-600">Uploaded, Now Analyzing...</span>
                       )}
                     </div>
 
@@ -1275,6 +1281,7 @@ const RegulationManagementPlatform: React.FC = () => {
                           <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }}></div>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">Processing document and analyzing changes...</p>
+                        <p className="text-sm text font-semibold text-red-400 mt-1">Please do not refresh the page!</p>
                       </div>
                     )}
 
