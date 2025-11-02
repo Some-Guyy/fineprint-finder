@@ -10,6 +10,7 @@ import { LLMAnalysisPage } from './pages/archive/LLMAnalysisPage';
 import { AlertsNotificationSettings } from './pages/archive/AlertsNotificationSettings';
 import RegulationManagementPlatform from './pages/Collaboration';
 import RelevantChangesPage from './pages/OverviewChanges';
+import AdminUserTable from './pages/AdminTable';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -33,6 +34,7 @@ function App() {
               <>
                 <Route path="/" element={<RegulationManagementPlatform />} />
                 <Route path="/changes-overview" element={<RelevantChangesPage />} />
+                <Route path="/admin" element={<AdminUserTable />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/scraping" element={<ScrapingManagement />} />
                 <Route path="/upload" element={<UploadPage />} />

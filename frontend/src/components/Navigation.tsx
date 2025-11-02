@@ -8,21 +8,11 @@ import {
   Bell,
   Activity,
   CheckSquare,
-  LogOut
+  LogOut,
+  Settings
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
-
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Changes Overview', href: '/changes-overview', icon: CheckSquare },
-  // { name: 'Dashboard (old)', href: '/dashboard', icon: Home },
-  // { name: 'Scraping Management', href: '/scraping', icon: Search },
-  // { name: 'Upload Documents', href: '/upload', icon: Upload },
-  // { name: 'Change Detection', href: '/changes', icon: Activity },
-  // { name: 'LLM Analysis', href: '/analysis', icon: Brain },
-  // { name: 'Alerts & Settings', href: '/alerts', icon: Bell },
-];
 
 interface NavigationProps {
   setIsAuthenticated?: (value: boolean) => void;
@@ -32,12 +22,21 @@ export function Navigation({ setIsAuthenticated }: NavigationProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [username, setUsername] = React.useState<string>("");
+  const [userRole, setUserRole] = React.useState<string>("");
+
+  const navigationItems = [
+    { name: 'Dashboard', href: '/', icon: Home },
+    { name: 'Changes Overview', href: '/changes-overview', icon: CheckSquare },
+    ...(userRole === "admin" ? [{ name: 'Admin Panel', href: '/admin', icon: Settings }] : [])
+  ];
+
 
   React.useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
       setUsername(user.username);
+      setUserRole(user.role);
     }
   }, []);
 
@@ -65,7 +64,7 @@ export function Navigation({ setIsAuthenticated }: NavigationProps) {
               </h1>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {navigation.map((item) => {
+              {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href;
                 return (
