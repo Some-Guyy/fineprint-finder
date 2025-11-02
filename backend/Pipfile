@@ -14,6 +14,7 @@ pdfplumber = "*"
 openai = "*"
 langsmith = "*"
 bcrypt = "*"
+pydantic = {extras = ["email"], version = "*"}
 
 [dev-packages]
 
