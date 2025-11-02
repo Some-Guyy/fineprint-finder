@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info, MoreVertical, Calendar, FileIcon, Bell } from 'lucide-react';
+import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info, MoreVertical, Calendar, FileIcon, Bell, X, AlertTriangle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import {
   Sheet,
@@ -68,6 +68,92 @@ interface Notification {
   seen: boolean;
   created_at: string;
 }
+
+interface AlertModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type?: 'success' | 'error' | 'warning' | 'info';
+  confirmText?: string;
+  showCancel?: boolean;
+  onConfirm?: () => void;
+}
+
+const AlertModal: React.FC<AlertModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  message,
+  type = 'info',
+  confirmText = 'OK',
+  showCancel = false,
+  onConfirm
+}) => {
+  if (!isOpen) return null;
+
+  const iconConfig = {
+    success: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
+    error: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
+    warning: { icon: AlertTriangle, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
+    info: { icon: Info, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' }
+  };
+
+  const config = iconConfig[type];
+  const Icon = config.icon;
+
+  const handleConfirm = () => {
+    if (onConfirm) {
+      onConfirm();
+    }
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md animate-in fade-in duration-200">
+        <div className="flex items-start justify-between p-6 pb-4">
+          <div className="flex items-center gap-3">
+            <div className={`${config.bg} ${config.border} border p-2 rounded-full`}>
+              <Icon size={24} className={config.color} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="px-6 pb-6">
+          <p className="text-gray-700 whitespace-pre-line">{message}</p>
+        </div>
+        <div className={`flex gap-3 px-6 pb-6 ${showCancel ? 'justify-end' : 'justify-center'}`}>
+          {showCancel && (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            onClick={handleConfirm}
+            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+              type === 'success' ? 'bg-green-600 hover:bg-green-700 text-white' :
+              type === 'error' ? 'bg-red-600 hover:bg-red-700 text-white' :
+              type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' :
+              'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const DetailedChangesView: React.FC<{
   changes: DetailedChange[];
@@ -420,6 +506,42 @@ const RegulationManagementPlatform: React.FC = () => {
   // username from local storage
   const [username, setUsername] = React.useState<string>("");
 
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    confirmText?: string;
+    showCancel?: boolean;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  const showAlert = (
+    type: 'success' | 'error' | 'warning' | 'info',
+    title: string,
+    message: string,
+    options?: {
+      confirmText?: string;
+      showCancel?: boolean;
+      onConfirm?: () => void;
+    }
+  ) => {
+    setAlertModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText: options?.confirmText || 'OK',
+      showCancel: options?.showCancel || false,
+      onConfirm: options?.onConfirm
+    });
+  };
+
   React.useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -633,14 +755,19 @@ const RegulationManagementPlatform: React.FC = () => {
       setNewTitle("");
       setNewVersionTitle("");
       setNewFile(null);
-      alert("Email notification sent to team regarding new regulation upload.");
+      showAlert('success', 'Regulation Added', 
+        'Email notification sent to team regarding new regulation upload.'
+      );
 
       // Refresh notifications
       fetchNotifications();
       
     } catch (err) {
       console.error(err);
-      alert("Error uploading regulation. Please try again.");
+      showAlert('error', 'Upload Failed', 
+        'Error uploading regulation. Please try again.'
+      );
+
     } finally {
       setIsAddingRegulation(false);
     }
@@ -649,7 +776,9 @@ const RegulationManagementPlatform: React.FC = () => {
   // updating regulation with new version of it
   const handleUpdateRegulation = async (file: File | null | undefined) => {
     if (!file) {
-      alert("Please select a PDF file.");
+      showAlert('warning', 'No File Selected', 
+        'Please select a PDF file before uploading.'
+      );
       return;
     }
 
@@ -714,12 +843,16 @@ const RegulationManagementPlatform: React.FC = () => {
         fileInputRef.current.value = "";
       }
 
-      alert("Email notification sent to team regarding new regulation version upload.");
+      showAlert('success', 'Version Updated', 
+        'Email notification sent to team regarding new regulation version upload.'
+      );
       fetchNotifications();
 
     } catch (err) {
       console.error(err);
-      alert(err);
+      showAlert('error', 'Update Failed', 
+        String(err)
+      );
     } finally {
       setIsUpdatingRegulation(false);
     }
@@ -801,7 +934,9 @@ const RegulationManagementPlatform: React.FC = () => {
 
             // Show success alert
             console.log(updatedFieldNames)
-            alert(`Successfully updated: ${updatedFieldNames}\n\nThis change has been reset to "Pending Review" status.`);
+            showAlert('success', 'Change Updated', 
+              `Successfully updated: ${updatedFieldNames}\n\nThis change has been reset to "Pending Review" status.`
+            );
           }
 
           // Handle status change if there's a new status (and no text changes, or after text changes)
@@ -809,12 +944,16 @@ const RegulationManagementPlatform: React.FC = () => {
             await handleChangeStatusUpdate(changeId, newStatus);
           } else if (Object.keys(updatedFields).length === 0 && (!newStatus || newStatus === change.status)) {
             // No changes made at all
-            alert('No changes were made to save.');
+            showAlert('warning', 'No Changes', 
+              'No changes were made to save.'
+            );
           }
 
         } catch (error) {
           console.error('Error updating change:', error);
-          alert(`Error updating change: ${error}`);
+          showAlert('error', 'Update Failed', 
+            `Error updating change: ${error}`
+          );
           return; // Don't clean up editing state if there was an error
         }
       }
@@ -901,7 +1040,9 @@ const RegulationManagementPlatform: React.FC = () => {
       );
 
     } catch (error) {
-      alert(error);
+      showAlert('error', 'Status Update Failed', 
+        String(error)
+      );
     }
   };
 
@@ -923,12 +1064,16 @@ const RegulationManagementPlatform: React.FC = () => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Failed to delete regulation:", errorData.detail || response.statusText);
-        alert("Failed to delete regulation. Please try again. Error: " + errorData.detail);
+        showAlert('error', 'Delete Failed', 
+          `Failed to delete regulation. Please try again.\n\nError: ${errorData.detail}`
+        );
         return;
 
       } else {
         const returnedResponse = await response.json();
-        alert(returnedResponse.message);
+        showAlert('success', 'Regulation Deleted', 
+          returnedResponse.message
+        );
         setRegulations(prev => prev.filter(reg => reg._id !== regId));
         setSelectedRegulation(null);
         setShowDeleteModal(false);
@@ -936,7 +1081,9 @@ const RegulationManagementPlatform: React.FC = () => {
 
     } catch (error) {
       console.error("Error deleting regulation:", error);
-      alert("Error deleting change. Please try again.");
+      showAlert('error', 'Delete Failed', 
+        `Failed to delete Change. Please try again.`
+      );
     }
 
   };
@@ -959,11 +1106,15 @@ const RegulationManagementPlatform: React.FC = () => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Failed to delete version:", errorData.detail || response.statusText);
-        alert("Failed to delete version. Please try again. Error: " + errorData.detail);
+        showAlert('error', 'Delete Failed', 
+          `Failed to delete version. Please try again.\n\nError: ${errorData.detail}`
+        );
         return;
       } else {
         const returnedResponse = await response.json();
-        alert(returnedResponse.message);
+        showAlert('success', 'Version Deleted', 
+          returnedResponse.message
+        );
 
         // Update local state by removing the deleted version
         setRegulations(prev => prev.map(reg =>
@@ -982,7 +1133,9 @@ const RegulationManagementPlatform: React.FC = () => {
 
     } catch (error) {
       console.error("Error deleting version:", error);
-      alert("Error deleting version. Please try again.");
+      showAlert('error', 'Delete Failed', 
+          `Failed to delete version. Please try again.`
+      );
     }
   };
 
@@ -1058,7 +1211,9 @@ const RegulationManagementPlatform: React.FC = () => {
 
     } catch (error) {
       console.error('Error adding comment:', error);
-      alert('Error adding comment. Please try again.');
+      showAlert('error', 'Comment Failed', 
+        'Error adding comment. Please try again.'
+      );
     }
   };
 
@@ -1690,6 +1845,17 @@ const RegulationManagementPlatform: React.FC = () => {
           </div>
         </div>
       )}
+
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        confirmText={alertModal.confirmText}
+        showCancel={alertModal.showCancel}
+        onConfirm={alertModal.onConfirm}
+      />
     </div>
   );
 };
