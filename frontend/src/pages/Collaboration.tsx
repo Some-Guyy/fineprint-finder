@@ -616,7 +616,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
         const data = await response.json();
 
-        // console.log(data)
+        console.log(data)
 
         // Sort versions within each regulation to ensure latest version is first
         const sortedData = data.map((regulation: Regulation) => ({
@@ -844,7 +844,7 @@ const RegulationManagementPlatform: React.FC = () => {
       }
 
       showAlert('success', 'Version Updated', 
-        'Email notification sent to team regarding new regulation version upload.'
+        `Email sent to the team about the new regulation version upload. The LLM has flagged changes based on relevance—please review with this in mind.`
       );
       fetchNotifications();
 
@@ -1236,9 +1236,8 @@ const RegulationManagementPlatform: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Nomura Regulation Management</h1>
-            <div className="flex items-center gap-4">
+          <div className="flex justify-end">
+            <div className="flex items-end gap-4">
               {/* Notification Bell */}
               <div className="relative">
                 <button
@@ -1346,7 +1345,7 @@ const RegulationManagementPlatform: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">{selectedReg.title}</h2>
-                      <div className="flex items-center gap-4 mt-2">
+                      {/* <div className="flex items-center gap-4 mt-2">
                         <span className={`px-2 py-1 text-xs rounded-full ${selectedReg.status === 'validated'
                           ? 'bg-green-100 text-green-800'
                           : 'bg-yellow-100 text-yellow-800'
@@ -1354,7 +1353,7 @@ const RegulationManagementPlatform: React.FC = () => {
                           {selectedReg.status.charAt(0).toUpperCase() + selectedReg.status.slice(1)}
                         </span>
 
-                      </div>
+                      </div> */}
                       <div className="flex items-center gap-2">
                         {selectedReg.versions.length > 1 && (
                           <div className="flex items-center gap-2 mt-2">
