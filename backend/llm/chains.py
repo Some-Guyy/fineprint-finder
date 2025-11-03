@@ -164,7 +164,7 @@ def delete_uploaded_files(file_ids):
 # -----------------------
 # Main Analysis
 # -----------------------
-def analyze_pdfs(before_key: str, after_file: str, auto_delete=True):
+def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
     # --- Download from S3 ---
     before_obj = s3_client.get_object(Bucket=s3_bucket, Key=before_key)
     before_stream = io.BytesIO(before_obj["Body"].read())
@@ -215,7 +215,7 @@ def analyze_pdfs(before_key: str, after_file: str, auto_delete=True):
         delete_vector_store(vector_store.id)
         delete_uploaded_files(uploaded_file_ids)
 
-    return changes_list
+    return structured
 
 # -----------------------
 # Run locally
