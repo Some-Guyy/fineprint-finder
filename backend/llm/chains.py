@@ -33,7 +33,7 @@ class Change(BaseModel):
     type: str
     confidence: float
     classification: str
-    status: str = "pending"
+    status: str 
     comments: List[str] = Field(default_factory=list)
 
 class ChangeList(BaseModel):
@@ -70,12 +70,27 @@ def wait_for_vector_store_ready(vector_store_id, timeout=120):
 @traceable(run_type="chain")
 def comparison(vectorstore_id):
     user_msg = """
-You are a legal expert specializing in regulations. 
-Your task is to compare two PDFs — a "before" version and an "after" version — and identify all changes in the regulatory text. 
+You are a legal expert specializing in regulations and compliance.  
+Your task is to compare two PDFs — a "before" version and an "after" version — and identify **ALL meaningful changes** in the regulatory text.
 
-Focus on **substantive changes** in the regulations, not formatting differences.
+Focus only on **substantive or legal meaning changes**.  
+Do NOT include:
+- Formatting differences (spacing, layout, punctuation)
+- Typographical or stylistic edits
+- Pure renumbering that does not alter meaning
 
-For each change, output a JSON object with the following fields:
+Include only real changes that alter:
+- Legal obligations
+- Definitions or terms
+- Scope or applicability
+- Thresholds, limits, or conditions
+- Data protection or compliance requirements
+- Timelines, procedures, or penalties
+
+---
+
+For each detected change, output a JSON object with the following fields:
+
 - id: change-1, change-2, etc. (sequential)
 - summary: one sentence summarizing the change
 - analysis: 2–4 sentences explaining the impact of the change
@@ -84,15 +99,19 @@ For each change, output a JSON object with the following fields:
 - after_quote: the relevant text from the "after" PDF, include page number
 - type: one of addition, deletion, modification, renumbering, scope change, threshold change, definition change, reference update, timeline change, penalty change, procedural change, unchanged
 - classification: one of Personal Identifiable Information handling, Data transfers, Cloud data usage, Others
-- confidence: a float between 0.0 and 1.0 indicating how confident you are in the identification
+- confidence: a float between 0.0 and 1.0 indicating confidence in the identification
+- status: either "relevant" or "not-relevant"  
+  - "Relevant" means the change affects financial institutions, client data, data transfers, trading systems, or regulatory compliance obligations of Nomura, a global financial institution providing investment banking, asset management, and securities services.
 
+---
 
 Rules:
-1. Do not include any extra text outside the JSON.
-2. Focus on legal meaning and obligations, not stylistic changes.
-3. Only create entries for actual changes — do not invent data.
-4. Maintain the sequential id order.
-5. Provide full context in before_quote and after_quote, enough to understand the change.
+1. Only include **meaningful, substantive regulatory changes**.  
+2. Do not list stylistic or formatting differences.  
+3. Keep the output in valid JSON format only — no extra text.  
+4. Maintain sequential IDs (change-1, change-2, etc.).  
+5. Provide enough context in before_quote and after_quote to understand the change.
+
 """
     response = client.responses.create(
         model=MODEL,
@@ -133,19 +152,19 @@ def delete_vector_store(vector_store_id):
     try:
         client.vector_stores.delete(vector_store_id)
     except Exception as e:
-        print(f"⚠️ Failed to delete vector store: {e}")
+        print(f"Failed to delete vector store: {e}")
 
 def delete_uploaded_files(file_ids):
     for fid in file_ids:
         try:
             client.files.delete(fid)
         except Exception as e:
-            print(f"⚠️ Failed to delete file {fid}: {e}")
+            print(f"Failed to delete file {fid}: {e}")
 
 # -----------------------
 # Main Analysis
 # -----------------------
-def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
+def analyze_pdfs(before_key: str, after_file: str, auto_delete=True):
     # --- Download from S3 ---
     before_obj = s3_client.get_object(Bucket=s3_bucket, Key=before_key)
     before_stream = io.BytesIO(before_obj["Body"].read())
@@ -153,10 +172,16 @@ def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
     before_upload = client.files.create(file=before_stream, purpose="assistants")
     wait_for_file(before_upload.id)
 
+    # after_file = s3_client.get_object(Bucket=s3_bucket, Key=after_key)
+    # after_stream = io.BytesIO(after_file["Body"].read())
+    # after_stream.name = "after.pdf"
+    # after_upload = client.files.create(file=after_stream, purpose="assistants")
+    # wait_for_file(before_upload.id)
+
     after_file = Path(after_path)
     with open(after_file, "rb") as f:
         after_upload = client.files.create(
-            file=("after.pdf", f),  # 👈 custom name here
+            file=("after.pdf", f),  
             purpose="assistants"
         )
     wait_for_file(after_upload.id)
@@ -176,12 +201,12 @@ def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
 
     structured = structure_changes(raw_output)
 
-    changes_list = []
-    for idx, change in enumerate(structured.changes, start=1):
-        change.id = f"change-{idx}"          # assign sequential IDs
-        change.status = "pending"            # set fixed status
-        change.comments = []                 # ensure comments field exists
-        changes_list.append(change.model_dump())  # convert Pydantic model → dict
+    # changes_list = []
+    # for idx, change in enumerate(structured.changes, start=1):
+    #     change.id = f"change-{idx}"          # assign sequential IDs
+    #     change.status = "pending"            # set fixed status
+    #     change.comments = []                 # ensure comments field exists
+    #     changes_list.append(change.model_dump())  # convert Pydantic model → dict
 
 
 
@@ -196,8 +221,8 @@ def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
 # Run locally
 # -----------------------
 # if __name__ == "__main__":
-#     before_key = "2025-10-16_07:27:21_UK Data Act.pdf"
-#     after_key = "2025-10-18_01:10:12_2025-10-16_07_28_04_Revised Data (Use and Access) Act 2025.pdf"
+#     before_key = "2025-10-02_02:12:21_eu_cookie_old.pdf"
+#     after_key = "2025-10-02_02:13:03_eu_cookie_new.pdf"
 
 #     changes_json = analyze_pdfs(before_key, after_key, auto_delete=True)
 #     print(json.dumps(changes_json, indent=2, ensure_ascii=False))
