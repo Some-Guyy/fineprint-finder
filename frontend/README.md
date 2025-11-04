@@ -2,8 +2,8 @@
 Contains the frontend source code to serve to clients.
 ## Setup
 ### Pre-requisites:
-- [Node.js](https://nodejs.org/en)
-- [npm](https://www.npmjs.com/) *(comes packaged with Node)*
+- [Node.js](https://nodejs.org/en) v24.x.x
+- [npm](https://www.npmjs.com/) v11.x.x *(comes packaged with Node)*
 ### Installation:
 In the `frontend` folder run `npm install`.
 ### Environment:
