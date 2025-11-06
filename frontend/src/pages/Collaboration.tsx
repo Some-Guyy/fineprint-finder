@@ -129,7 +129,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
         <div className="px-6 pb-6">
           <p className="text-gray-700 whitespace-pre-line">{message}</p>
         </div>
-        <div className={`flex gap-3 px-6 pb-6 ${showCancel ? 'justify-end' : 'justify-center'}`}>
+        <div className="flex gap-3 px-6 pb-6 justify-end">
           {showCancel && (
             <button
               onClick={onClose}
