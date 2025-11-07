@@ -1670,7 +1670,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
       {/* Version Management Drawer */}
       <Sheet open={showVersionDrawer} onOpenChange={setShowVersionDrawer}>
-        <SheetContent side="right" className="w-[500px] sm:w-[640px]">
+        <SheetContent side="right" className="w-[500px] sm:w-[640px] flex flex-col">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <FileText size={20} />
@@ -1692,7 +1692,7 @@ const RegulationManagementPlatform: React.FC = () => {
             </div>
           </SheetHeader>
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 space-y-3 overflow-y-auto flex-1 pr-2">
             {selectedReg?.versions.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <FileText size={48} className="mx-auto mb-4 text-gray-400" />
