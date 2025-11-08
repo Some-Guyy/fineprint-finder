@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info, MoreVertical, Calendar, FileIcon, Bell } from 'lucide-react';
+import { FileText, Plus, Upload, Edit3, Trash2, Mail, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Info, MoreVertical, Calendar, FileIcon, Bell, X, AlertTriangle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import {
   Sheet,
@@ -68,6 +68,92 @@ interface Notification {
   seen: boolean;
   created_at: string;
 }
+
+interface AlertModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type?: 'success' | 'error' | 'warning' | 'info';
+  confirmText?: string;
+  showCancel?: boolean;
+  onConfirm?: () => void;
+}
+
+const AlertModal: React.FC<AlertModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  message,
+  type = 'info',
+  confirmText = 'OK',
+  showCancel = false,
+  onConfirm
+}) => {
+  if (!isOpen) return null;
+
+  const iconConfig = {
+    success: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200' },
+    error: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
+    warning: { icon: AlertTriangle, color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200' },
+    info: { icon: Info, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' }
+  };
+
+  const config = iconConfig[type];
+  const Icon = config.icon;
+
+  const handleConfirm = () => {
+    if (onConfirm) {
+      onConfirm();
+    }
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md animate-in fade-in duration-200">
+        <div className="flex items-start justify-between p-6 pb-4">
+          <div className="flex items-center gap-3">
+            <div className={`${config.bg} ${config.border} border p-2 rounded-full`}>
+              <Icon size={24} className={config.color} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="px-6 pb-6">
+          <p className="text-gray-700 whitespace-pre-line">{message}</p>
+        </div>
+        <div className="flex gap-3 px-6 pb-6 justify-end">
+          {showCancel && (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            onClick={handleConfirm}
+            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+              type === 'success' ? 'bg-green-600 hover:bg-green-700 text-white' :
+              type === 'error' ? 'bg-red-600 hover:bg-red-700 text-white' :
+              type === 'warning' ? 'bg-yellow-600 hover:bg-yellow-700 text-white' :
+              'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const DetailedChangesView: React.FC<{
   changes: DetailedChange[];
@@ -420,6 +506,42 @@ const RegulationManagementPlatform: React.FC = () => {
   // username from local storage
   const [username, setUsername] = React.useState<string>("");
 
+  const [alertModal, setAlertModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    confirmText?: string;
+    showCancel?: boolean;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  const showAlert = (
+    type: 'success' | 'error' | 'warning' | 'info',
+    title: string,
+    message: string,
+    options?: {
+      confirmText?: string;
+      showCancel?: boolean;
+      onConfirm?: () => void;
+    }
+  ) => {
+    setAlertModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText: options?.confirmText || 'OK',
+      showCancel: options?.showCancel || false,
+      onConfirm: options?.onConfirm
+    });
+  };
+
   React.useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
@@ -439,7 +561,6 @@ const RegulationManagementPlatform: React.FC = () => {
       }
       const data = await response.json();
       setNotifications(data);
-      console.log(data)
       setUnreadCount(data.filter((n: Notification) => !n.seen).length);
     } catch (err) {
       console.error('Error fetching notifications:', err);
@@ -458,7 +579,7 @@ const RegulationManagementPlatform: React.FC = () => {
         },
         body: JSON.stringify({ username }),
       });
-      console.log(response)
+
       if (!response.ok) {
         throw new Error('Failed to mark notification as seen');
       }
@@ -495,7 +616,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
         const data = await response.json();
 
-        // console.log(data)
+        console.log(data)
 
         // Sort versions within each regulation to ensure latest version is first
         const sortedData = data.map((regulation: Regulation) => ({
@@ -594,16 +715,6 @@ const RegulationManagementPlatform: React.FC = () => {
   // console.log(selectedReg)
   // console.log(currentVersionData)
 
-  // Change from pending to verified or vice versa for whole
-  const handleStatusChange = (regId: string) => {
-    setRegulations(prev => prev.map(reg =>
-      reg._id === regId
-        ? { ...reg, status: reg.status === 'pending' ? 'validated' : 'pending' }
-        : reg
-    ));
-    // Simulate email notification
-    alert('Email notification sent to team regarding status change.');
-  };
 
   // add brand new regulation
   const handleAddRegulation = async () => {
@@ -644,13 +755,19 @@ const RegulationManagementPlatform: React.FC = () => {
       setNewTitle("");
       setNewVersionTitle("");
       setNewFile(null);
+      showAlert('success', 'Regulation Added', 
+        'A new Regulation has been added.'
+      );
 
       // Refresh notifications
       fetchNotifications();
-
+      
     } catch (err) {
       console.error(err);
-      alert("Error uploading regulation. Please try again.");
+      showAlert('error', 'Upload Failed', 
+        'Error uploading regulation. Please try again.'
+      );
+
     } finally {
       setIsAddingRegulation(false);
     }
@@ -659,7 +776,9 @@ const RegulationManagementPlatform: React.FC = () => {
   // updating regulation with new version of it
   const handleUpdateRegulation = async (file: File | null | undefined) => {
     if (!file) {
-      alert("Please select a PDF file.");
+      showAlert('warning', 'No File Selected', 
+        'Please select a PDF file before uploading.'
+      );
       return;
     }
 
@@ -680,7 +799,7 @@ const RegulationManagementPlatform: React.FC = () => {
       });
 
       const data = await res.json();
-      console.log(data)
+      // console.log(data)
       if (!res.ok) {
         const errorMessage =
           data.detail && typeof data.detail === 'object' && 'details' in data.detail
@@ -724,12 +843,16 @@ const RegulationManagementPlatform: React.FC = () => {
         fileInputRef.current.value = "";
       }
 
-      alert("Email notification sent to team regarding new regulation version upload.");
+      showAlert('success', 'Version Updated', 
+        `Email sent to the team about the new regulation version upload. The LLM has flagged changes based on relevance—please review with this in mind.`
+      );
       fetchNotifications();
 
     } catch (err) {
       console.error(err);
-      alert(err);
+      showAlert('error', 'Update Failed', 
+        String(err)
+      );
     } finally {
       setIsUpdatingRegulation(false);
     }
@@ -811,7 +934,9 @@ const RegulationManagementPlatform: React.FC = () => {
 
             // Show success alert
             console.log(updatedFieldNames)
-            alert(`Successfully updated: ${updatedFieldNames}\n\nThis change has been reset to "Pending Review" status.`);
+            showAlert('success', 'Change Updated', 
+              `Successfully updated: ${updatedFieldNames}\n\nThis change has been reset to "Pending Review" status.`
+            );
           }
 
           // Handle status change if there's a new status (and no text changes, or after text changes)
@@ -819,12 +944,16 @@ const RegulationManagementPlatform: React.FC = () => {
             await handleChangeStatusUpdate(changeId, newStatus);
           } else if (Object.keys(updatedFields).length === 0 && (!newStatus || newStatus === change.status)) {
             // No changes made at all
-            alert('No changes were made to save.');
+            showAlert('warning', 'No Changes', 
+              'No changes were made to save.'
+            );
           }
 
         } catch (error) {
           console.error('Error updating change:', error);
-          alert(`Error updating change: ${error}`);
+          showAlert('error', 'Update Failed', 
+            `Error updating change: ${error}`
+          );
           return; // Don't clean up editing state if there was an error
         }
       }
@@ -911,7 +1040,9 @@ const RegulationManagementPlatform: React.FC = () => {
       );
 
     } catch (error) {
-      alert(error);
+      showAlert('error', 'Status Update Failed', 
+        String(error)
+      );
     }
   };
 
@@ -933,12 +1064,16 @@ const RegulationManagementPlatform: React.FC = () => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Failed to delete regulation:", errorData.detail || response.statusText);
-        alert("Failed to delete regulation. Please try again. Error: " + errorData.detail);
+        showAlert('error', 'Delete Failed', 
+          `Failed to delete regulation. Please try again.\n\nError: ${errorData.detail}`
+        );
         return;
 
       } else {
         const returnedResponse = await response.json();
-        alert(returnedResponse.message);
+        showAlert('success', 'Regulation Deleted', 
+          returnedResponse.message
+        );
         setRegulations(prev => prev.filter(reg => reg._id !== regId));
         setSelectedRegulation(null);
         setShowDeleteModal(false);
@@ -946,7 +1081,9 @@ const RegulationManagementPlatform: React.FC = () => {
 
     } catch (error) {
       console.error("Error deleting regulation:", error);
-      alert("Error deleting change. Please try again.");
+      showAlert('error', 'Delete Failed', 
+        `Failed to delete Change. Please try again.`
+      );
     }
 
   };
@@ -969,11 +1106,15 @@ const RegulationManagementPlatform: React.FC = () => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Failed to delete version:", errorData.detail || response.statusText);
-        alert("Failed to delete version. Please try again. Error: " + errorData.detail);
+        showAlert('error', 'Delete Failed', 
+          `Failed to delete version. Please try again.\n\nError: ${errorData.detail}`
+        );
         return;
       } else {
         const returnedResponse = await response.json();
-        alert(returnedResponse.message);
+        showAlert('success', 'Version Deleted', 
+          returnedResponse.message
+        );
 
         // Update local state by removing the deleted version
         setRegulations(prev => prev.map(reg =>
@@ -992,7 +1133,9 @@ const RegulationManagementPlatform: React.FC = () => {
 
     } catch (error) {
       console.error("Error deleting version:", error);
-      alert("Error deleting version. Please try again.");
+      showAlert('error', 'Delete Failed', 
+          `Failed to delete version. Please try again.`
+      );
     }
   };
 
@@ -1068,7 +1211,9 @@ const RegulationManagementPlatform: React.FC = () => {
 
     } catch (error) {
       console.error('Error adding comment:', error);
-      alert('Error adding comment. Please try again.');
+      showAlert('error', 'Comment Failed', 
+        'Error adding comment. Please try again.'
+      );
     }
   };
 
@@ -1091,9 +1236,8 @@ const RegulationManagementPlatform: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Nomura Regulation Management</h1>
-            <div className="flex items-center gap-4">
+          <div className="flex justify-end">
+            <div className="flex items-end gap-4">
               {/* Notification Bell */}
               <div className="relative">
                 <button
@@ -1186,13 +1330,6 @@ const RegulationManagementPlatform: React.FC = () => {
                       </div>
                       <p className="text-xs text-gray-500 mt-1">Updated: {regulation.lastUpdated}</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {regulation.status === 'validated' ? (
-                        <CheckCircle size={16} className="text-green-500" />
-                      ) : (
-                        <AlertCircle size={16} className="text-yellow-500" />
-                      )}
-                    </div>
                   </div>
                 </div>
               ))}
@@ -1208,7 +1345,7 @@ const RegulationManagementPlatform: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900">{selectedReg.title}</h2>
-                      <div className="flex items-center gap-4 mt-2">
+                      {/* <div className="flex items-center gap-4 mt-2">
                         <span className={`px-2 py-1 text-xs rounded-full ${selectedReg.status === 'validated'
                           ? 'bg-green-100 text-green-800'
                           : 'bg-yellow-100 text-yellow-800'
@@ -1216,7 +1353,7 @@ const RegulationManagementPlatform: React.FC = () => {
                           {selectedReg.status.charAt(0).toUpperCase() + selectedReg.status.slice(1)}
                         </span>
 
-                      </div>
+                      </div> */}
                       <div className="flex items-center gap-2">
                         {selectedReg.versions.length > 1 && (
                           <div className="flex items-center gap-2 mt-2">
@@ -1245,20 +1382,6 @@ const RegulationManagementPlatform: React.FC = () => {
                         <FileText size={14} />
                         View All Versions ({selectedReg.versions.length})
                       </Button>
-                      <Button variant="outline"
-                        onClick={() => handleStatusChange(selectedReg._id)}
-                        className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50"
-                      >
-                        <Mail size={14} />
-                        {selectedReg.status === 'pending' ? 'Validate' : 'Mark Pending'}
-                      </Button>
-                      <button
-                        onClick={() => setShowDeleteModal(true)}
-                        className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-red-50 text-red-600"
-                      >
-                        <Trash2 size={14} />
-                        Delete
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -1515,7 +1638,7 @@ const RegulationManagementPlatform: React.FC = () => {
         </div>
       )}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <h2 className="text-lg font-semibold mb-4 text-red-600">Delete Regulation</h2>
             <p className="text-gray-700 mb-6">
@@ -1547,7 +1670,7 @@ const RegulationManagementPlatform: React.FC = () => {
 
       {/* Version Management Drawer */}
       <Sheet open={showVersionDrawer} onOpenChange={setShowVersionDrawer}>
-        <SheetContent side="right" className="w-[500px] sm:w-[640px]">
+        <SheetContent side="right" className="w-[500px] sm:w-[640px] flex flex-col">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <FileText size={20} />
@@ -1556,9 +1679,20 @@ const RegulationManagementPlatform: React.FC = () => {
             <SheetDescription>
               Manage all versions of <strong>{selectedReg?.title}</strong>
             </SheetDescription>
+            <div className="w-fit">
+              <button
+                onClick={() => {setShowDeleteModal(true)
+                                setShowVersionDrawer(false);
+                }}
+                className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-red-50 text-red-600"
+              >
+                <Trash2 size={14} />
+                Delete Regulation
+              </button>
+            </div>
           </SheetHeader>
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-6 space-y-3 overflow-y-auto flex-1 pr-2">
             {selectedReg?.versions.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <FileText size={48} className="mx-auto mb-4 text-gray-400" />
@@ -1710,6 +1844,17 @@ const RegulationManagementPlatform: React.FC = () => {
           </div>
         </div>
       )}
+
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        confirmText={alertModal.confirmText}
+        showCancel={alertModal.showCancel}
+        onConfirm={alertModal.onConfirm}
+      />
     </div>
   );
 };
