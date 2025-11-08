@@ -8,16 +8,33 @@ Contains the backend API server that connects to other services.
 In the `backend` folder, run `pip install -r requirements.txt` in your desired python environment. *(Or run `pipenv install` if you are using pipenv)*.
 ### Services:
 This prototype utilizes multiple cloud services, significantly helping in handover transition processes for the project by centralizing data. Here are the list of services used and what you'll need to prepare before running the app:
-- [MongoDB](https://www.mongodb.com/) account, with collections that need to be created:
-    - "regulations"
-    - "users"
-    - "notifications"
-- [AWS](https://console.aws.amazon.com/console/home/) console account, with an S3 bucket set up
+- [MongoDB](https://www.mongodb.com/) account
+    - Collections that need to be created:
+        - "regulations"
+        - "users"
+        - "notifications"
+    - You will need to insert at least 1 root admin user manually into the "users" collection to use the user system.
+        1. Run this python code snippet to print the hashed password of the admin account. Replace the {{your_admin_password}} with a string of your actual admin password in the code:
+            ```
+            import bcrypt
+            def get_password_hash(password: str) -> str:
+                salt = bcrypt.gensalt()
+                hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+                return hashed.decode("utf-8")
+            print(get_password_hash({{your_admin_password}}))
+            ```
+        1. Insert a document into the "users" collection of your MongoDB with the following structure *(you may choose any username and email, but  you must replace {{your_hashed_password_string}} with the printed hash you got earlier)*:
+            - "username": {{your_username_string}}
+            - "email": {{your_email_string}}
+            - "password": {{your_hashed_password_string}}
+            - "role": "admin"
+- [AWS](https://console.aws.amazon.com/console/home/) console account
+    - Set up an S3 bucket
 - [Langsmith](https://smith.langchain.com/) account
 - [OpenAI Platform](https://platform.openai.com/login) account
 - Any SMTP service, the one used in the initial build was [Gmail](https://developers.google.com/workspace/gmail/imap/imap-smtp).
 ### Environment:
-A `.env` file is required in this `backend` folder for the app to utilize the cloud services set up earlier. Here are some explanations for some of these variables:
+A `.env` file is required in this `backend` folder for the app to utilize the cloud services set up earlier. Most of them can be retrieved in your account details for each of the services. Here are some explanations for some of these variables:
 - AWS_DEFAULT_REGION: Example: `ap-southeast-1`. Ensure your region contains your set up services (S3)
 - LANGSMITH_TRACING: Accepts `true` or `false`
 - SMTP_PASSWORD: If you use Gmail for SMTP, you can create/access your passwords [here](https://myaccount.google.com/apppasswords).
