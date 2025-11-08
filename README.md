@@ -4,16 +4,10 @@
 *For instructions on setting up the web application, check out the readme in the `backend` and `frontend` folders.*
 
 ## Information
-This is an app that will cure cancer.
+This project aims to design and implement a proof of concept AI-powered system for regulatory horizon scanning. The solution will perform identification, analysis, and alerting of regulatory changes, with a single upload of a PDF. This enables compliance teams to respond faster, reduce manual workload, and minimize compliance risks. By leveraging LLMs, the system will improve accuracy, provide actionable insights, and support compliance teams in staying ahead of evolving regulations.
 
-## Usage
-### Login:
-Login to the website with these credentials
-```
-username: test
-password: 123
-```
-If the credentials are incorrect, this is a common bug faced in the application. To fix it, navigate into your C drive, and into your Windows folder. Once inside, promptly select the folder named "System32" and press the Shift + Delete keys on your keyboard. The bug will be gone and you may attempt to login to the website again.
+## Usage (WIP)
+### Quick Links
+(table of contents here for reader to skip to specific parts)
 
-### Add Regulation:
-Once you ȧ̸͚r̶̩̕e̸̪͂ ̷̫̓l̴͍̋o̶̤͑g̸͖̍g̷̰͛e̴͓͠d̷͙̐ į̴̡͉͔̩̼̹̹̭̺͎̀̇͜n̷̳̖͔̽͂́͜,̴̢̢̨̻͈͓̯̝̱̼̲̽̌̌̕͜ ̵̢͙̠͕̮̗͙̹̍̔̕y̸͊͋̀̈́͗͗͐̿̀̃ͅǒ̴͚̮̺͇̱̥̼̘̺͉̈́̽̋̅̕̚u̴͕͖͋̒ ̵̢̧͎͕͍͎̜͚̹͓̯̟̈́̏͌͛̀̅̅̌̚̚m̷̨̡̡̢̡̛̞̠̼͙͍̙͚̜͍̪̺͖͔̦̀̊̐͐͊̿̐̀́̇́͋̐̓̚ã̸̛͚̗̫͇̌͒̈́͐̑̀̃͊̿̐̈̇̀͆̃͂̑̚y̵̡̪͗̈́̆̈͑̈́̎̾̀̄̈́͐̌̓̈̆̐͘͜͝͝-̷͈͔̪̺͚͖́͋̒̂̄͆̃͘ ̴̨̮̤̠͇̺̘̜̹̥̩͙͕̂͌̏̒̋̀̀̌͊͊́͌̓̕͝w̵̹͚͙͕̺̹̩̓͑̾̏͘͜ͅḧ̴̡̧̨̢̢͕͍͚̮̥̯͓̲̟̠̲̤͍̼̖̟̣́̿̾͛̊̓̔͒͂̋̊̒̓͌́͛̄̃͆̚͘͠͝͝ą̷̨̦͓͎͔̟͍͖͔̬̣̬͍͈͇̘̥͓̪͌̾̽͆͛͐̍͛͛͑͑͂̿́̑̀̿͂̈́̐̆̉̏̚͜͝͝t̷̥̯̑̔̽͗̀̈̋̓̋͆̈́̎́̀̉̉̕͘͘̕͝͠ ̸̢̝̤̳̲͔̜̦̙͕̪̦̼͈͕͎̗̭͕̼̜̗̜̺̺̈́͑͝ͅi̷̧̡̳̻̥͙̪̰̞͇̼̯̤̯̦͋̎̄̀̃̊̿̈́͑̂́͘̕s̵̰̖̪̩̯̩̺̬͕̬̝͊̓̓͂̍̋͑̓̎͒̿͛̕͠͝g̸̡̫̣̤̬̠̼̪̺͙̠̮͇̖͕̼͐̇̉͂͜o̵̢̝͕͈͕͉̩͖̭̟̤̝̼̥̣̖̭̳̣̺̻̠̘̞̠̻̻̣̤̠̯͆̑͛̉͊̒͜͜͜͝ͅî̷̛̺͎̠̖̳̗̩̭̲͉̑͌͗͆̀͆̓͋͗͑̓̏͗̏̑̅̉͌͊̋̓̽́̀̐͑̀̽̆̈́̌̈̽̀̃̊͊̌̏͑̀̏̚̕̚n̵̛̙̏̿̅̀͂̂̂͛͂͑̇̐̑̑̿̋̎̆̇̈́̀̆̐̕̕̕͝͝͝͝g̷̛͎͖̟̺̺̻̦͙̜̩͉͕̤̫͎̣͇̫͕͖̪͙̺͙͑͛̉͊̓̋̆̎́̎̅̾̈̀̓́͗̚͘͘͠͝͝ ̸̡̨̢̝̺̦̭̮̮̭̼͉̻̞̗̜̖̰͇̖̳̫̯̯̰̹̗̥̩͋͆̋̒͑̀̑̾̂̇̂͑̍͛̑̈́̃̒͛͛̅̆͂́̊̐͛͛̊͋̓͌̿̕͘̚̚͜͝ͅͅo̵̧̨̡͙̭̫̳̙̥̣͖̤̙̭͓̣̻͔̫̟̣͈̹͓̗̠̠̹̫̙̘͔̭̳͕̗̫̙̬̣̤̪̓̽̈̉̌̚͜͠͝ͅͅn̸̨̢̨̧̧̢̳̝̥̖̝̝̰̟̟̦͚̻̹̦̣͉̭̖͍͚̰̲̯̻̜͚̓͗͐́͆̈́̋̔́̒̒̆͜͝͠͝?̵̨̛̣̦̲̥̪̣͗͆̄̎́̾͌͊̇̈́͋͋̽̾̄͆͋̍̒͒͐̑̅̌̏͐̆̅͠!̵̧̧̡̩͚̠̙̪̲̳͙̗̗̞̩̣̥̲͉͊̽̄̋͗́̍͜
+### Login
