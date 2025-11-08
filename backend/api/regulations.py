@@ -53,8 +53,7 @@ async def create_regulation(title: str = Body(...), version: str = Body(...), fi
                     "s3Key": s3_key,
                     "detailedChanges": []
                 }
-            ],
-            "comments": []
+            ]
         }
         result = regulation_collection.insert_one(doc)
         
