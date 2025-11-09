@@ -67,3 +67,6 @@ If you wish to specify your backend ports, change the port values in the `server
 - For windows 10 (or above): Run the `startup.ps1` script
 - For MacOS or gnome-based linux distros (e.g. Ubuntu, Fedora): Run the `startup.sh` script
 - For the rest, you will need to run the main and llm servers separately: Run `server.sh` and `llm.sh` while inside your Python environment with the [above](#installation) installed packages. If you are unable to run bash, run the contents of those files directly on Python instead.
+
+### Endpoints
+Go to http://{{DOMAIN}}:{{PORT}}/docs to view more details on the endpoints when while the backend is running. Replace {{DOMAIN}} and {{PORT}} accordingly.
