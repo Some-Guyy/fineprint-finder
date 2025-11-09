@@ -15,6 +15,7 @@ This project aims to design and implement a proof of concept AI-powered system f
 - [View and edit change in version comparison](#view-and-edit-change-in-version-comparison)
 - [Filter changes across a regulation version comparison](#filter-changes-across-a-regulation-version-comparison)
 - [Filter changes across multiple regulations and export to CSV](#filter-changes-across-multiple-regulations-and-export-to-csv)
+- [(Admin) Create user](#admin-create-user)
 - [(Admin) Edit details of user](#admin-edit-details-of-user)
 - [(Admin) Change password of user](#admin-change-password-of-user)
 - [(Admin) Delete user](#admin-delete-user)
@@ -63,6 +64,12 @@ This project aims to design and implement a proof of concept AI-powered system f
 1. Click "Filters" button
 1. Edit preferred filters, results will appear below the filter options
 1. Click the "Export CSV" if needed
+
+### (Admin) Create user
+1. Click the "Admin Panel" tab
+1. Click on "Create User"
+1. Input details of new user
+1. Click "Create User"
 
 ### (Admin) Edit details of user
 1. Click the "Admin Panel" tab
