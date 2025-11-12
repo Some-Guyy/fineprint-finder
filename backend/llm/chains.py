@@ -1,11 +1,9 @@
 import os
 import io
-import json
 import time
 from pathlib import Path
 from typing import List
 from pydantic import BaseModel, Field
-from llm.segmentation import segmentation, extract_pdf_text
 from openai import OpenAI
 from langsmith import traceable
 from services.s3 import s3_client, s3_bucket
@@ -19,7 +17,6 @@ MODEL = "gpt-5-mini"
 SYSTEM_MSG = (
     "You are a legal expert. Compare regulation PDFs to find out what was changed."
 )
-
 # -----------------------
 # Pydantic Schema
 # -----------------------
@@ -172,12 +169,6 @@ def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
     before_upload = client.files.create(file=before_stream, purpose="assistants")
     wait_for_file(before_upload.id)
 
-    # after_file = s3_client.get_object(Bucket=s3_bucket, Key=after_key)
-    # after_stream = io.BytesIO(after_file["Body"].read())
-    # after_stream.name = "after.pdf"
-    # after_upload = client.files.create(file=after_stream, purpose="assistants")
-    # wait_for_file(before_upload.id)
-
     after_file = Path(after_path)
     with open(after_file, "rb") as f:
         after_upload = client.files.create(
@@ -198,7 +189,6 @@ def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
     raw_output = comparison(vector_store.id)
 
     # --- Structure into Pydantic object ---
-
     structured = structure_changes(raw_output)
 
     changes_list = []
@@ -207,21 +197,9 @@ def analyze_pdfs(before_key: str, after_path: str, auto_delete=True):
         change.comments = []                 # ensure comments field exists
         changes_list.append(change.model_dump())  # convert Pydantic model → dict
 
-
-
     # --- Cleanup ---
     if auto_delete:
         delete_vector_store(vector_store.id)
         delete_uploaded_files(uploaded_file_ids)
 
     return changes_list
-
-# -----------------------
-# Run locally
-# -----------------------
-# if __name__ == "__main__":
-#     before_key = "2025-10-02_02:12:21_eu_cookie_old.pdf"
-#     after_key = "2025-10-02_02:13:03_eu_cookie_new.pdf"
-
-#     changes_json = analyze_pdfs(before_key, after_key, auto_delete=True)
-#     print(json.dumps(changes_json, indent=2, ensure_ascii=False))
