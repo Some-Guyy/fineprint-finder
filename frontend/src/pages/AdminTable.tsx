@@ -220,7 +220,10 @@ export default function AdminUserTable() {
     <div className="w-full max-w-6xl mx-auto p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">User Management</h1>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
+        <Button onClick={() => {
+          resetForm();
+          setIsCreateDialogOpen(true);
+        }}>
           <Plus className="w-4 h-4 mr-2" />
           Create User
         </Button>
@@ -286,7 +289,12 @@ export default function AdminUserTable() {
       </div>
 
       {/* Create User Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+        if (open) {
+          resetForm();
+        }
+        setIsCreateDialogOpen(open);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New User</DialogTitle>
