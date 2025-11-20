@@ -7,12 +7,13 @@ from pydantic import BaseModel, Field
 from openai import OpenAI
 from langsmith import traceable
 from services.s3 import s3_client, s3_bucket
+from enum import Enum
 
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-MODEL = "gpt-5-mini"
+MODEL = "gpt-5"
 
 SYSTEM_MSG = (
     "You are a legal expert. Compare regulation PDFs to find out what was changed."
@@ -20,6 +21,10 @@ SYSTEM_MSG = (
 # -----------------------
 # Pydantic Schema
 # -----------------------
+class Status(str, Enum):
+    relevant = "relevant"
+    not_relevant = "not-relevant"
+
 class Change(BaseModel):
     id: str
     summary: str
@@ -30,7 +35,7 @@ class Change(BaseModel):
     type: str
     confidence: float
     classification: str
-    status: str 
+    status: Status 
     comments: List[str] = Field(default_factory=list)
 
 class ChangeList(BaseModel):
@@ -98,7 +103,7 @@ For each detected change, output a JSON object with the following fields:
 - classification: one of Personal Identifiable Information handling, Data transfers, Cloud data usage, Others
 - confidence: a float between 0.0 and 1.0 indicating confidence in the identification
 - status: either "relevant" or "not-relevant"  
-  - "Relevant" means the change affects financial institutions, client data, data transfers, trading systems, or regulatory compliance obligations of Nomura, a global financial institution providing investment banking, asset management, and securities services.
+  - "Relevant" means the change affects financial institutions, client data, data transfers, trading systems, or regulatory compliance obligations of Nomura, a global financial institution providing investment banking, asset management, and securities services. If it does not involve any of the above, it should be "not-relevant".
 
 ---
 
@@ -133,7 +138,7 @@ def structure_changes(raw_text: str) -> ChangeList:
                 "role": "system",
                 "content": (
                     "You are a data formatter. Convert the following text into valid JSON "
-                    "matching the ChangeList schema. Ensure the result strictly follows the schema."
+                    "matching the ChangeList schema. Ensure the result strictly follows the schema. The status field must be exactly one of: 'relevant', 'not-relevant'. Any other value is invalid."
                 ),
             },
             {"role": "user", "content": raw_text},
