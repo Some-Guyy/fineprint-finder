@@ -6,7 +6,7 @@
 ## Information
 This project aims to design and implement a proof of concept AI-powered system for regulatory horizon scanning. The solution will perform identification, analysis, and alerting of regulatory changes, with a single upload of a PDF. This enables compliance teams to respond faster, reduce manual workload, and minimize compliance risks. By leveraging LLMs, the system will improve accuracy, provide actionable insights, and support compliance teams in staying ahead of evolving regulations.
 
-## Usage (WIP)
+## Usage
 ### Quick Links
 - [Login](#login)
 - [Adding a new regulation](#adding-a-new-regulation)
